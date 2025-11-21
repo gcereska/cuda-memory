@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <printf.h>
 
-#include "cpu_custom_malloc.h"
+#include "cpuPoolMalloc.h"
 
 const size_t SIZE = 15;
 

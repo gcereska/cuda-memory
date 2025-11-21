@@ -2,8 +2,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#include "rb.h"
-#include "CPUMemBuffer.h"
+
+#include "cpuPoolMemBuffer.h"
 
 #define MEM_POOL_SIZE 3072
 
@@ -20,39 +20,8 @@ If the linked list goes well and proves valuable I will move on to either the AV
 
 
 extern char* memBuffer;
-extern BlockHeader *free_list;
-extern BlockHeader *full_list;  
-
-// typedef struct {
-
-
-    
-//     int16_t next_offset;
-//     int16_t prev_offset;
-
-//     //because our space is bounded to roughly 3kb, it should be possible to use a uint16 instead of a size_t to represent our space(4kb can be represented in 12 bits...)
-//     //update: because I am starting with linked list this will have a bool packed into the first bit
-
-//     int16_t size;
-//     uint16_t padding; //6 byte accesses are bad, 8 are good
-
-//     /*
-//     for later implementations
-
-//     //because of the bounded space, instead of holding full 64 bit pointers it should be possible to get away with a relative offset from the start of the BlockHeader*, thus reducing our space
-//     int16_t left_offset;
-//     int16_t right_offset;
-
-
-//     int16_t avl_meta_data; //this will hold a boolean(free) and a 15 bit integer(AVL height)
-//     //if the bool is on the most significant bit, i can just check the signedness of the integer to check full or free
-
-//     int16_t parent_offset; //for a RBTree impl
-
-//     */
-    
-// } BlockHeader;
-
+extern BlockHeader *freeList;
+extern BlockHeader *fullList;  
 
 
 typedef struct {
@@ -61,7 +30,8 @@ typedef struct {
 } CpuMemBuffer;
 
 
-int8_t is_full(BlockHeader* currentHeader);
+int8_t get_full(BlockHeader* currentHeader);
+
 
 //helper function to clean up pointer math
 int16_t get_offset(char* lhs, char* rhs);
@@ -91,7 +61,7 @@ int16_t get_node_size(BlockHeader* currentHeader);
 void init_cpu_buffer();
 void free_buffer();
 
-void* cmalloc(uint16_t size);
+void* cmalloc(int16_t size);
 
 void cfree(void * address_for_deletion);
 
