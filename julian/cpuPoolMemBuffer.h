@@ -26,15 +26,26 @@ typedef struct {
 } BlockHeader;
 */
 
+// typedef struct {
+
+//     uint64_t full           : 1;
+//     uint64_t size           : 15;
+
+//     int64_t nextOffset      : 16;
+//     int64_t prevOffset      : 16;
+
+//     int64_t padding         : 16;
+
+// } BlockHeader;
+
 typedef struct {
 
-    uint64_t full           : 1;
-    uint64_t size           : 15;
+    int16_t fullSize;
 
-    int64_t nextOffset      : 16;
-    int64_t prevOffset      : 16;
+    int16_t nextOffset;
+    int16_t prevOffset;
 
-    int64_t padding         : 16;
+    int16_t padding;
 
 } BlockHeader;
 
