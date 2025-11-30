@@ -4,7 +4,8 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "poolAlloc.cuh"
+#include "typeDefs.cuh"
+#include "poolAllocBST.cuh"
 
 
 
@@ -43,15 +44,17 @@ __device__ uint get_linear_thread_index(){
 //------------------------------------------------------------------------------------HELPER FUNCTIONS TO DEAL WITH THE STRUCT--------------------------------------------------------------------------------------------
 
 
-//this is kind of useles since I added the bitmapped BlockHeader
-__device__ int8_t get_full(BlockHeader* currentHeader){
+__device__ int8_t get_full(RBTreeBlockHeader* currentHeader){
     return currentHeader->fullSize < 0;
 }
 
-//this is kind of useles since I added the bitmapped BlockHeader
 //the size and full used to be packed into an int16 hence the helper functions
-__device__ int16_t get_node_size(BlockHeader* currentHeader){
-    return currentHeader->fullSize & 0x7FFF;
+__device__ int16_t get_node_size(RBTreeBlockHeader* currentHeader){
+    return currentHeader->fullSize & 0x3FFF;
+}
+
+__device__ int8_t get_node_color(RBTreeBlockHeader* currentHeader){
+    return currentHeader->fullSize & 0x4000;
 }
 
 //these are all relatively simple helper functions to make the pointer math easier
@@ -59,12 +62,12 @@ __device__ int16_t get_offset(unsigned char* from, unsigned char* to){
     return (unsigned char*)to - (unsigned char*)from;
 }
 
-__device__ BlockFooter* get_footer(BlockHeader* header){
-    return (BlockFooter*)((unsigned char*)header + get_node_size(header) + sizeof(BlockHeader));
+__device__ BlockFooter* get_footer(RBTreeBlockHeader* header){
+    return (BlockFooter*)((unsigned char*)header + get_node_size(header) + sizeof(RBTreeBlockHeader));
 }
 
 //gets the previous header from the total memPool
-__device__ BlockHeader* get_prev_header(BlockHeader* currentHeader){
+__device__ RBTreeBlockHeader* get_prev_header(RBTreeBlockHeader* currentHeader){
 
     uint threadIndex = get_linear_thread_index();
 
@@ -74,12 +77,12 @@ __device__ BlockHeader* get_prev_header(BlockHeader* currentHeader){
     }
 
     BlockFooter* prev_footer = (BlockFooter*)((unsigned char*)currentHeader - sizeof(BlockFooter));
-    BlockHeader* prevHeader = (BlockHeader*)((unsigned char*)prev_footer + prev_footer->headerOffset);
+    RBTreeBlockHeader* prevHeader = (RBTreeBlockHeader*)((unsigned char*)prev_footer + prev_footer->headerOffset);
     return prevHeader;
 }
 
 //gets the next header from the total memPool
-__device__ BlockHeader* get_next_header(BlockHeader* currentHeader){
+__device__ RBTreeBlockHeader* get_next_header(RBTreeBlockHeader* currentHeader){
 
     uint threadIndex = get_linear_thread_index();
 
@@ -89,11 +92,11 @@ __device__ BlockHeader* get_next_header(BlockHeader* currentHeader){
     int currentHeaderOffset = get_offset(memPools[threadIndex].memBuffer, (unsigned char*)currentHeader);
     uint64_t temp_size = get_node_size(currentHeader);
     
-    if((currentHeaderOffset + temp_size + sizeof(BlockHeader) + sizeof(BlockFooter)) >= threadPoolSize){
+    if((currentHeaderOffset + temp_size + sizeof(RBTreeBlockHeader) + sizeof(BlockFooter)) >= threadPoolSize){
         return NULL;
     }
     
-    BlockHeader* nextHeader = (BlockHeader*)((unsigned char*)currentHeader + temp_size + sizeof(BlockFooter) + sizeof(BlockHeader));
+    RBTreeBlockHeader* nextHeader = (RBTreeBlockHeader*)((unsigned char*)currentHeader + temp_size + sizeof(BlockFooter) + sizeof(RBTreeBlockHeader));
     return nextHeader;
 }
 
@@ -165,66 +168,6 @@ __device__ void list_remove(BlockHeader** list, BlockHeader* deletionNode){
     deletionNode->prevOffset = 0;
 }
 
-//------------------------------------------------------------------------------------LIST SORT--------------------------------------------------------------------------------------------
-
-
-__device__ void sort_free_list(uint threadIndex){
-    if(memPools[threadIndex].freeList == NULL) return;
-    
-    int changed = 1;
-    while(changed == 1){
-        changed = 0;
-        BlockHeader* current = (BlockHeader*)memPools[threadIndex].freeList;
-        
-        while(current != NULL){
-            
-            BlockHeader* next = get_next_list_header(current);
-            
-            // If next exists and current is smaller, swap
-            if(next != NULL && get_node_size(current) < get_node_size(next)){
-
-                BlockHeader* prev = get_prev_list_header(current);
-                BlockHeader* afterNext = get_next_list_header(next);
-                
-                next->prevOffset = 0;
-                // Fix prev node's next pointer
-                if(prev != NULL){
-                    prev->nextOffset = get_offset((unsigned char*)prev, (unsigned char*)next);
-                    next->prevOffset = get_offset((unsigned char*)next, (unsigned char*)prev);
-                } else {
-                    memPools[threadIndex].freeList = next;
-                    
-                }
-                
-                current->nextOffset = 0;
-                // Fix after_next node's prev pointer  
-                if(afterNext != NULL){
-                    afterNext->prevOffset = get_offset((unsigned char*)afterNext, (unsigned char*)current);
-                    current->nextOffset = get_offset((unsigned char*)current, (unsigned char*)afterNext);
-                }
-                
-                // Make next point to prev and current
-                
-                next->nextOffset = get_offset((unsigned char*)next, (unsigned char*)current);
-                
-                // Make current point to next and after_next
-                current->prevOffset = get_offset((unsigned char*)current, (unsigned char*)next);
-                
-                
-                changed = 1;
-                break; 
-            }
-            
-            if(!changed){
-                current = next;  
-                
-            }
-            
-            
-        }
-    }
-}
-
 //------------------------------------------------------------------------------------DEBUG FUNCTIONS--------------------------------------------------------------------------------------------
 
 
@@ -235,13 +178,13 @@ __device__ void debug_print_buffer(){
     
 
     printf("\n|");
-    BlockHeader* currentNode = (BlockHeader*)memPools[threadIndex].memBuffer;
+    RBTreeBlockHeader* currentNode = (RBTreeBlockHeader*)memPools[threadIndex].memBuffer;
     while (currentNode != NULL){
         printf(" %4u |", get_node_size(currentNode));
         currentNode = get_next_header(currentNode);
     }
     printf("\n|");
-    currentNode = (BlockHeader*)memPools[threadIndex].memBuffer;
+    currentNode = (RBTreeBlockHeader*)memPools[threadIndex].memBuffer;
 
     while (currentNode != NULL){
         if(get_full(currentNode)){
@@ -261,13 +204,13 @@ __device__ void debug_print_free_list(){
 
 
     printf("\n|");
-    BlockHeader* currentNode = (BlockHeader*)memPools[threadIndex].freeList;
+    RBTreeBlockHeader* currentNode = (RBTreeBlockHeader*)memPools[threadIndex].freeList;
     while (currentNode != NULL){
         printf(" %4u |", get_node_size(currentNode));
         currentNode = get_next_list_header(currentNode);
     }
     printf("\n|");
-    currentNode = (BlockHeader*)memPools[threadIndex].freeList;
+    currentNode = (RBTreeBlockHeader*)memPools[threadIndex].freeList;
 
     while (currentNode != NULL){
         if(get_full(currentNode)){
@@ -307,9 +250,6 @@ __device__ void debug_print_full_list(){
 }
 
 //------------------------------------------------------------------------------------START OF ACTUAL FUNCTIONS FOR MALLOC--------------------------------------------------------------------------------------------
-
-
-
 
 __device__ void init_gpu_buffer(uint incomingMemSize){
 
@@ -352,8 +292,8 @@ __device__ void init_gpu_buffer(uint incomingMemSize){
 
     // printf("mempool start pointer: %p\n", memPool.memBuffer);
 
-    BlockHeader *header = (BlockHeader*)memPools[threadIndex].memBuffer;
-    header->fullSize = (threadPoolSize - (sizeof(BlockHeader) + sizeof(BlockFooter))) & 0x7FFF;
+    RBTreeBlockHeader *header = (RBTreeBlockHeader*)memPools[threadIndex].memBuffer;
+    header->fullSize = (threadPoolSize - (sizeof(RBTreeBlockHeader) + sizeof(BlockFooter))) & 0x7FFF;
     header->nextOffset = 0;
     header->prevOffset = 0;
 
@@ -367,13 +307,13 @@ __device__ void* cmalloc(unsigned long size){
 
     uint threadIndex = get_linear_thread_index();
 
-    if(memPools[threadIndex].freeList == NULL || get_node_size(memPools[threadIndex].freeList) < (size + (int16_t)sizeof(BlockHeader) + (int16_t)sizeof(BlockFooter))){
+    if(memPools[threadIndex].freeList == NULL || get_node_size(memPools[threadIndex].freeList) < (size + (int16_t)sizeof(RBTreeBlockHeader) + (int16_t)sizeof(BlockFooter))){
         // printf("malloc eval null exit\n");
         return NULL;
     }
 
     uint16_t preAllocationSize = get_node_size(memPools[threadIndex].freeList);
-    BlockHeader* newlyAllocatedHeader = memPools[threadIndex].freeList;
+    RBTreeBlockHeader* newlyAllocatedHeader = memPools[threadIndex].freeList;
 
     // Align size to 8 bytes, leaving the last 2 bytes for the block footer
     uint8_t offset = (8 - ((size + sizeof(BlockFooter)) % 8));
@@ -390,10 +330,10 @@ __device__ void* cmalloc(unsigned long size){
     list_push_front(&memPools[threadIndex].fullList, newlyAllocatedHeader);
 
     // Create new free block if there's enough space
-    uint16_t remainingSize = preAllocationSize - (sizeToAlloc + sizeof(BlockHeader) + sizeof(BlockFooter));
+    uint16_t remainingSize = preAllocationSize - (sizeToAlloc + sizeof(RBTreeBlockHeader) + sizeof(BlockFooter));
     
     if(remainingSize > 0){
-        BlockHeader* newFreeHeader = (BlockHeader*)((unsigned char*)(newlyAllocatedFooter) + sizeof(BlockFooter));
+        RBTreeBlockHeader* newFreeHeader = (RBTreeBlockHeader*)((unsigned char*)(newlyAllocatedFooter) + sizeof(BlockFooter));
         newFreeHeader->fullSize = remainingSize & 0x7FFF; //both sets size and sets empty
         newFreeHeader->nextOffset = 0;
         newFreeHeader->prevOffset = 0;
@@ -406,7 +346,7 @@ __device__ void* cmalloc(unsigned long size){
 
     sort_free_list(threadIndex);
 
-    void* return_index = (unsigned char*)newlyAllocatedHeader + sizeof(BlockHeader);
+    void* return_index = (unsigned char*)newlyAllocatedHeader + sizeof(RBTreeBlockHeader);
     return return_index;
 }
 
@@ -422,7 +362,7 @@ __device__ void cfree(void* addressForDeletion){
         return;
     }
 
-    BlockHeader* deletion_target = (BlockHeader*)((unsigned char*)addressForDeletion - sizeof(BlockHeader));
+    RBTreeBlockHeader* deletion_target = (RBTreeBlockHeader*)((unsigned char*)addressForDeletion - sizeof(RBTreeBlockHeader));
     list_remove(&memPools[threadIndex].fullList, deletion_target);
 
     deletion_target->fullSize &= 0x7FFF;
@@ -430,8 +370,8 @@ __device__ void cfree(void* addressForDeletion){
     int8_t forward_coalesce_valid = 0;
     int8_t backward_coalesce_valid = 0;
 
-    BlockHeader* prevHeader = get_prev_header(deletion_target);
-    BlockHeader* nextHeader = get_next_header(deletion_target);
+    RBTreeBlockHeader* prevHeader = get_prev_header(deletion_target);
+    RBTreeBlockHeader* nextHeader = get_next_header(deletion_target);
 
     if(prevHeader != NULL && !get_full(prevHeader)){
         backward_coalesce_valid = 1;
@@ -444,7 +384,7 @@ __device__ void cfree(void* addressForDeletion){
     // Forward coalesce
     if(forward_coalesce_valid){
         int16_t tempSize = get_node_size(deletion_target);
-        tempSize += sizeof(BlockFooter) + sizeof(BlockHeader) + get_node_size(nextHeader);
+        tempSize += sizeof(BlockFooter) + sizeof(RBTreeBlockHeader) + get_node_size(nextHeader);
         
         deletion_target->fullSize = tempSize & 0x7FFF;
 
@@ -460,7 +400,7 @@ __device__ void cfree(void* addressForDeletion){
         
         int16_t tempSize = get_node_size(prevHeader);
 
-        tempSize += sizeof(BlockFooter) + sizeof(BlockHeader) + get_node_size(deletion_target);
+        tempSize += sizeof(BlockFooter) + sizeof(RBTreeBlockHeader) + get_node_size(deletion_target);
         prevHeader->fullSize = tempSize & 0x7FFF;
 
         
