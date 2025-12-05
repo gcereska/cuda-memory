@@ -1,3 +1,6 @@
+#ifndef POOLALLOC_CUH
+#define POOLALLOC_CUH
+
 #include "typeDefs.cuh"
 #include "RBTree.cuh"
 
@@ -12,13 +15,13 @@ typedef struct {
 
 typedef struct {
     unsigned char* memBuffer;
-    Tree* freeList;
+    RBTreeBlockHeader *freeList;
     RBTreeBlockHeader *fullList;
 } MemBufferStorage;
 
 
 
-__device__ void init_gpu_buffer(uint sharedMemSize);
+__device__ void init_gpu_buffer(unsigned int incomingMemSize);
 
 __device__ void *cmalloc(unsigned long size);
 
@@ -35,3 +38,4 @@ __device__ void debug_print_full_list();
 // __device__ int dataBytes(BlockHeader *head);
 
 // __device__ int headerBytes(BlockHeader *head);
+#endif

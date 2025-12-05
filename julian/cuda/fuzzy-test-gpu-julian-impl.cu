@@ -4,7 +4,7 @@
 #include <getopt.h>
 #include <assert.h>
 
-#include "poolAlloc.cuh"
+#include "poolAllocBST.cuh"
 
 #define NUM_THREADS 64
 #define OPS_PER_THREAD 30
@@ -127,14 +127,14 @@ int main(int argc, char **argv) {
     TestOperation *d_ops;
     cudaMalloc(&d_ops, sizeof(TestOperation) * NUM_THREADS * OPS_PER_THREAD);
     cudaMemcpy(d_ops, ops, sizeof(TestOperation) * NUM_THREADS * OPS_PER_THREAD, cudaMemcpyHostToDevice);
-    printf("spawning warp");
+    printf("spawning warp\n");
     fflush(stdout); // Force print before kernel launch
 
     size_t sharedMemSize = 49152;
     runTests<<<1, NUM_THREADS,sharedMemSize>>>(d_ops, sharedMemSize);
     cudaDeviceSynchronize();
 
-    printf("warp complete");
+    printf("warp complete\n");
     fflush(stdout); // Force print before kernel launch
 
     cudaFree(d_ops);

@@ -1,13 +1,14 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
 
-#include "poolAlloc.cuh"
+#include "poolAllocBST.cuh"
 
 __global__ void allocate_and_write(int **ptrs, int n, uint sharedMemSize) {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
     // poolinit(poolMemoryBlock, idx);
-    
+    printf("entering kernel correctly\n");
     init_gpu_buffer(sharedMemSize);
+    printf("init buffer correctly\n");
 
     if(idx == 0){
         debug_print_buffer();
@@ -53,7 +54,7 @@ __global__ void allocate_and_write(int **ptrs, int n, uint sharedMemSize) {
 //attempting to access the same piece of shared memory across multiple kernels is illegal and will result in undefined behaviors
 __global__ void read_and_free(int **ptrs, int n) {
     // unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    // printf("Thread %d: ", idx);
+    printf("WE READING AND FREEING");
     // if (idx < n && ptrs[idx] != NULL) {
     //     for (int i = 0; i < 4; ++i) {
     //         printf("%d ", ptrs[idx][i]);
@@ -66,18 +67,23 @@ int main() {
     int n = 8;
     int **d_ptrs;
 
-    uint sharedMemSize = 49152;
+    uint sharedMemSize = 24000;
 
     printf("here\n");
     cudaMalloc(&d_ptrs, n * sizeof(int*));
 
-
+    printf("post mem alloc\n");
     allocate_and_write<<<1, n, sharedMemSize>>>(d_ptrs, n, sharedMemSize);
     cudaDeviceSynchronize();
+
+    printf("post alloc & write\n");
+
 
     read_and_free<<<1, n, sharedMemSize>>>(d_ptrs, n);
     cudaDeviceSynchronize();
     
+    printf("post read & free\n");
+
 
     cudaFree(d_ptrs);
     return 0;
