@@ -1,37 +1,12 @@
-typedef struct {
-    /*
-    first bit will be full status, second bit will be color 
-    typedef struct{
-        int16_t fullStatus : 1
-        int16_t color : 1
-        int16_t size : 14
-    } fullSize
+#include <stdio.h>
 
-    */
-    int16_t fullSize;
+#include "RBTree.cuh"
 
-    int16_t leftOffset;
-    int16_t rightOffset;
 
-    int16_t parentOffset;
+//-------------------------------------------------------HELPER FUNCTIONS--------------------------------------------------------------
 
-} RBTreeBlockHeader;
 
-typedef enum Color: int { 
-    BLACK, 
-    RED 
-} Color;
-
-typedef enum Direction: int { 
-    LEFT, 
-    RIGHT 
-} Direction;
-
-typedef struct {
-	RBTreeBlockHeader* root;
-} Tree;
-
-static Direction direction(RBTreeBlockHeader* N) {
+__device__ static Direction direction(RBTreeBlockHeader* N) {
 
     RBTreeBlockHeader* parent = get_parent(N);
     RBTreeBlockHeader* parentRight = get_right_child(parent);
@@ -39,7 +14,7 @@ static Direction direction(RBTreeBlockHeader* N) {
     return N == parentRight ? RIGHT : LEFT;
 }
 
-void set_color(RBTreeBlockHeader* node, Color color){
+__device__ void set_color(RBTreeBlockHeader* node, Color color){
     if(color == BLACK){
         node->fullSize &= 0xCFFF;
     }
@@ -48,15 +23,24 @@ void set_color(RBTreeBlockHeader* node, Color color){
     }
 }
 
-RBTreeBlockHeader* get_parent(RBTreeBlockHeader* node){
+__device__ RBTreeBlockHeader* get_parent(RBTreeBlockHeader* node){
+    if (node->parentOffset == 0) {
+        return NULL;
+    }
     return (RBTreeBlockHeader*)(node + node->parentOffset);
 }
 
-RBTreeBlockHeader* get_left_child(RBTreeBlockHeader* node){
+__device__ RBTreeBlockHeader* get_left_child(RBTreeBlockHeader* node){
+    if (node->leftOffset == 0) {
+        return NULL;
+    }
     return (RBTreeBlockHeader*)(node + node->leftOffset);
 }
 
-RBTreeBlockHeader* get_right_child(RBTreeBlockHeader* node){
+__device__ RBTreeBlockHeader* get_right_child(RBTreeBlockHeader* node){
+    if (node->rightOffset == 0) {
+        return NULL;
+    }
     return (RBTreeBlockHeader*)(node + node->rightOffset);
 }
 
@@ -67,11 +51,149 @@ __device__ Color get_color(RBTreeBlockHeader* currentHeader){
     return (Color)temp;
 }
 
-__device__ int16_t get_offset(unsigned char* from, unsigned char* to){
+static __device__ int16_t get_offset(unsigned char* from, unsigned char* to){
     return (unsigned char*)to - (unsigned char*)from;
 }
 
-RBTreeBlockHeader* rotate_subtree(Tree* tree, RBTreeBlockHeader* sub, Direction dir) {
+// Helper function to extract the size from fullSize field
+__device__ int16_t get_size(RBTreeBlockHeader* node) {
+    // Mask out the two flag bits (bits 15 and 14) and keep only the size (bits 13-0)
+    return node->fullSize & 0x3FFF;
+}
+
+__device__ bool has_left_child(RBTreeBlockHeader* node) {
+    return node->leftOffset != 0;
+}
+
+__device__ bool has_right_child(RBTreeBlockHeader* node) {
+    return node->rightOffset != 0;
+}
+
+//------------------------------------------------START OF REAL FUNCTIONS-------------------------------------------------------------------
+
+// Search function - returns pointer to node with matching size, or NULL if not found
+__device__ RBTreeBlockHeader* search(RBTreeBlockHeader** root, int16_t target_size) {
+    RBTreeBlockHeader* current = *root;
+    
+    while (current != NULL) {
+        int16_t current_size = get_size(current);
+        
+        if (target_size == current_size) {
+            // Found the target
+            return current;
+        } else if (target_size < current_size) {
+            // Search left subtree
+            if (current->leftOffset == 0) {
+                return NULL;  // No left child
+            }
+            current = get_left_child(current);
+        } else {
+            // Search right subtree
+            if (current->rightOffset == 0) {
+                return NULL;  // No right child
+            }
+            current = get_right_child(current);
+        }
+    }
+    
+    return NULL;  // Tree is empty or element not found
+}
+
+// Alternative: Search for closest fit (smallest block >= target_size)
+// Useful for memory allocation scenarios
+__device__ RBTreeBlockHeader* search_best_fit(RBTreeBlockHeader** root, int16_t target_size) {
+    RBTreeBlockHeader* current = *root;
+    RBTreeBlockHeader* best_fit = NULL;
+    
+    while (current != NULL) {
+        int16_t current_size = get_size(current);
+        
+        if (current_size >= target_size) {
+            // This could be a fit - update best_fit if it's smaller than current best
+            if (best_fit == NULL || current_size < get_size(best_fit)) {
+                best_fit = current;
+            }
+            
+            // Try to find a smaller fit in the left subtree
+            if (current->leftOffset == 0) {
+                break;
+            }
+            current = get_left_child(current);
+        } else {
+            // Current is too small, search right subtree
+            if (current->rightOffset == 0) {
+                break;
+            }
+            current = get_right_child(current);
+        }
+    }
+    
+    return best_fit;
+}
+
+// Find insertion point - returns parent node and direction for insertion
+// Pass pointers to parent and dir, which will be set by this function
+__device__ void find_insert_position(RBTreeBlockHeader** root, int16_t new_size, 
+                          RBTreeBlockHeader** out_parent, Direction* out_dir) {
+    if (root == NULL || *root == NULL) {
+        *out_parent = NULL;
+        *out_dir = LEFT;
+        return;
+    }
+    
+    RBTreeBlockHeader* current = *root;
+    RBTreeBlockHeader* parent = NULL;
+    Direction dir = LEFT;
+    
+    int iterations = 0;
+    while (current != NULL && iterations < 100) {  // Safety limit
+        iterations++;
+        parent = current;
+        int16_t current_size = get_size(current);
+                
+        if (new_size < current_size) {
+            dir = LEFT;
+            if (current->leftOffset == 0) {
+                current = NULL;
+            } else {
+                current = get_left_child(current);
+            }
+        } else {
+            dir = RIGHT;
+            if (current->rightOffset == 0) {
+                current = NULL;
+            } else {
+                current = get_right_child(current);
+            }
+        }
+    }
+    
+    *out_parent = parent;
+    *out_dir = dir;
+}
+
+// Example usage of find_insert_position with your existing insert function:
+__device__ void insert_node(RBTreeBlockHeader** root, RBTreeBlockHeader* new_node, int16_t size) {
+    // Set the size in the node (preserving any existing flags)
+    new_node->fullSize = (new_node->fullSize & 0xC000) | (size & 0x3FFF);
+    
+    // Initialize offsets to 0 (no children)
+    new_node->leftOffset = 0;
+    new_node->rightOffset = 0;
+    
+    // Find where to insert
+    RBTreeBlockHeader* parent;
+    Direction dir;
+
+
+
+    find_insert_position(root, size, &parent, &dir);
+    
+    // Use your existing insert function to insert and rebalance
+    insert(root, new_node, parent, dir);
+}
+
+__device__ RBTreeBlockHeader* rotate_subtree(RBTreeBlockHeader** root, RBTreeBlockHeader* sub, Direction dir) {
 
 	RBTreeBlockHeader* sub_parent = get_parent(sub);
 	RBTreeBlockHeader* new_root; 
@@ -114,100 +236,72 @@ RBTreeBlockHeader* rotate_subtree(Tree* tree, RBTreeBlockHeader* sub, Direction 
 
 		
 	} else {
-		tree->root = new_root;
+		*root = new_root;
     }
 
 	return new_root;
 }
 
-void insert(Tree* tree, RBTreeBlockHeader* node, RBTreeBlockHeader* parent, Direction dir) {
-	set_color(node, RED);
-	node->parentOffset = get_offset((unsigned char*)node,(unsigned char*)parent);
-
-	if (!parent) {
-		tree->root = node;
-		return;
-	}
-
+__device__ void insert(RBTreeBlockHeader** root, RBTreeBlockHeader* node, RBTreeBlockHeader* parent, Direction dir) {
+    
+    node->leftOffset = 0;
+    node->rightOffset = 0;
+    
+    if (!parent) {
+        node->parentOffset = 0;
+        *root = node;
+        set_color(node, BLACK);
+        return;
+    }
+    
+    set_color(node, RED);
+    node->parentOffset = get_offset((unsigned char*)node, (unsigned char*)parent);
+    
     if(dir == LEFT){
-        parent->leftOffset = get_offset((unsigned char*)parent,(unsigned char*)node);
+        parent->leftOffset = get_offset((unsigned char*)parent, (unsigned char*)node);
+    } else {
+        parent->rightOffset = get_offset((unsigned char*)parent, (unsigned char*)node);
     }
-    else{
-        parent->rightOffset = get_offset((unsigned char*)parent,(unsigned char*)node);
+    
+    int iterations = 0;
+    
+    do {
+        iterations++;
         
-    }
-
-	// rebalance the tree 
-	do {
-		// Case #1
-		if (get_color(parent) == BLACK) {
+ 
+        
+        // Case #1
+        if (get_color(parent) == BLACK) {
             return; 
         }
-
-	    RBTreeBlockHeader* grandparent = get_parent(parent);
-
-		if (!grandparent) {
-			// Case #4
-			set_color(parent, BLACK);
-			return;
-		}
-
-		dir = direction(parent);
-        RBTreeBlockHeader* uncle;
-
-        if(dir == LEFT){
-            uncle = get_right_child(grandparent);
-           
-            if (!uncle || get_color(uncle) == BLACK) {
-                if (node == get_right_child(parent)) {
-                    // Case #5
-                    rotate_subtree(tree, parent, dir);
-                    node = parent;
-                    parent = get_left_child(grandparent);
-                }
-
-                // Case #6
-                rotate_subtree(tree, grandparent, RIGHT);
-                set_color(parent, BLACK);
-                set_color(grandparent,RED);
-                return;
-            }
-
-            
+        
+        RBTreeBlockHeader* grandparent = get_parent(parent);
+        
+        if (!grandparent) {
+            set_color(parent, BLACK);
+            return;
         }
-        else{
-            uncle = get_left_child(grandparent);
-           
-            if (!uncle || get_color(uncle) == BLACK) {
-                if (node == get_left_child(parent)) {
-                    // Case #5
-                    rotate_subtree(tree, parent, dir);
-                    node = parent;
-                    parent = get_right_child(grandparent);
-                }
-
-                // Case #6
-                rotate_subtree(tree, grandparent, LEFT);
-                set_color(parent, BLACK);
-                set_color(grandparent,RED);
-                return;
-            }
-        }
-	
-		// Case #2
-		set_color(parent, BLACK);
+        
+        dir = direction(parent);
+        
+        RBTreeBlockHeader* uncle = NULL;
+        
+        // ... rest of your code with similar logging
+        
+        set_color(parent, BLACK);
         set_color(uncle, BLACK);
         set_color(grandparent, RED);
+        
         node = grandparent;
-
-	} while ((parent = get_parent(node)));
-
-	// Case #3
-	return;
-
+        
+        parent = get_parent(node);
+        
+    } while (parent);
+    
+    set_color(*root, BLACK);
 }
 
-void remove(Tree* tree, RBTreeBlockHeader* node) {
+__device__ void remove(RBTreeBlockHeader** root, RBTreeBlockHeader* node) {
 	RBTreeBlockHeader* parent = get_parent(node);
 
 	RBTreeBlockHeader* sibling;
@@ -236,7 +330,7 @@ start_balance:
             close_nephew =get_left_child(sibling);
             if (get_color(sibling) == RED) {
                 // Case #3
-                rotate_subtree(tree, parent, dir);
+                rotate_subtree(root, parent, dir);
                 set_color(parent, RED);
                 set_color(sibling, BLACK);
                 
@@ -264,7 +358,7 @@ start_balance:
             close_nephew =get_right_child(sibling);
             if (get_color(sibling) == RED) {
                 // Case #3
-                rotate_subtree(tree, parent, dir);
+                rotate_subtree(root, parent, dir);
                 set_color(parent, RED);
                 set_color(sibling, BLACK);
                 
@@ -316,10 +410,10 @@ start_balance:
 case_5:
 
     if(dir == LEFT){
-        rotate_subtree(tree, sibling, RIGHT);
+        rotate_subtree(root, sibling, RIGHT);
     }
     else{
-        rotate_subtree(tree, sibling, LEFT);
+        rotate_subtree(root, sibling, LEFT);
     }
     set_color(sibling, RED);
     set_color(close_nephew, BLACK);
@@ -329,7 +423,7 @@ case_5:
 
 case_6:
 
-	rotate_subtree(tree, parent, dir);
+	rotate_subtree(root, parent, dir);
     set_color(sibling, get_color(parent));
     set_color(parent,BLACK);
     set_color(distant_nephew, BLACK);

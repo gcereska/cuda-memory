@@ -1,3 +1,6 @@
+#ifndef RBTREE_CUH
+#define RBTREE_CUH
+
 #include "typeDefs.cuh"
 
 typedef enum Color: int { 
@@ -10,25 +13,23 @@ typedef enum Direction: int {
     RIGHT 
 } Direction;
 
-typedef struct {
-	RBTreeBlockHeader* root;
-} Tree;
+__device__ static Direction direction(RBTreeBlockHeader* N);
 
-static Direction direction(RBTreeBlockHeader* N);
+__device__ void set_color(RBTreeBlockHeader* node, Color color);
 
-void set_color(RBTreeBlockHeader* node, Color color);
+__device__ RBTreeBlockHeader* get_parent(RBTreeBlockHeader* node);
 
-RBTreeBlockHeader* get_parent(RBTreeBlockHeader* node);
+__device__ RBTreeBlockHeader* get_left_child(RBTreeBlockHeader* node);
 
-RBTreeBlockHeader* get_left_child(RBTreeBlockHeader* node);
-
-RBTreeBlockHeader* get_right_child(RBTreeBlockHeader* node);
+__device__ RBTreeBlockHeader* get_right_child(RBTreeBlockHeader* node);
 
 __device__ Color get_color(RBTreeBlockHeader* currentHeader);
 
-__device__ int16_t get_offset(unsigned char* from, unsigned char* to);
+static __device__ int16_t get_offset(unsigned char* from, unsigned char* to);
 
-RBTreeBlockHeader* rotate_subtree(Tree* tree, RBTreeBlockHeader* sub, Direction dir);
+__device__ RBTreeBlockHeader* rotate_subtree(RBTreeBlockHeader** root, RBTreeBlockHeader* sub, Direction dir);
 
-void insert(Tree* tree, RBTreeBlockHeader* node, RBTreeBlockHeader* parent, Direction dir);
-void remove(Tree* tree, RBTreeBlockHeader* node);
+__device__ void insert_node(RBTreeBlockHeader** root, RBTreeBlockHeader* new_node, int16_t size);
+__device__ void insert(RBTreeBlockHeader** root, RBTreeBlockHeader* node, RBTreeBlockHeader* parent, Direction dir);
+__device__ void remove(RBTreeBlockHeader** root, RBTreeBlockHeader* node);
+#endif 

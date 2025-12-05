@@ -1,3 +1,6 @@
+#ifndef TYPEDEFS_CUH
+#define TYPEDEFS_CUH
+
 typedef struct {
 
     
@@ -39,3 +42,5 @@ typedef struct {
     int16_t padding;
 
 } BlockHeader;
+
+#endif // TYPEDEFS_CUH

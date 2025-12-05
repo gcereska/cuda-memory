@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #include "typeDefs.cuh"
+#include "RBTree.cuh"
 #include "poolAllocBST.cuh"
 
 
@@ -48,9 +49,17 @@ __device__ int8_t get_full(RBTreeBlockHeader* currentHeader){
     return currentHeader->fullSize < 0;
 }
 
+__device__ int8_t get_full(BlockHeader* currentHeader){
+    return currentHeader->fullSize < 0;
+}
+
 //the size and full used to be packed into an int16 hence the helper functions
 __device__ int16_t get_node_size(RBTreeBlockHeader* currentHeader){
     return currentHeader->fullSize & 0x3FFF;
+}
+
+__device__ int16_t get_node_size(BlockHeader* currentHeader){
+    return currentHeader->fullSize & 0x7FFF;
 }
 
 __device__ int8_t get_node_color(RBTreeBlockHeader* currentHeader){
@@ -58,7 +67,7 @@ __device__ int8_t get_node_color(RBTreeBlockHeader* currentHeader){
 }
 
 //these are all relatively simple helper functions to make the pointer math easier
-__device__ int16_t get_offset(unsigned char* from, unsigned char* to){
+static __device__ int16_t get_offset(unsigned char* from, unsigned char* to){
     return (unsigned char*)to - (unsigned char*)from;
 }
 
@@ -198,30 +207,30 @@ __device__ void debug_print_buffer(){
 }
 
 
-__device__ void debug_print_free_list(){
+// __device__ void debug_print_free_list(){
 
-    uint threadIndex = get_linear_thread_index();
+//     uint threadIndex = get_linear_thread_index();
 
 
-    printf("\n|");
-    RBTreeBlockHeader* currentNode = (RBTreeBlockHeader*)memPools[threadIndex].freeList;
-    while (currentNode != NULL){
-        printf(" %4u |", get_node_size(currentNode));
-        currentNode = get_next_list_header(currentNode);
-    }
-    printf("\n|");
-    currentNode = (RBTreeBlockHeader*)memPools[threadIndex].freeList;
+//     printf("\n|");
+//     RBTreeBlockHeader* currentNode = (RBTreeBlockHeader*)memPools[threadIndex].freeList;
+//     while (currentNode != NULL){
+//         printf(" %4u |", get_node_size(currentNode));
+//         currentNode = get_next_list_header(currentNode);
+//     }
+//     printf("\n|");
+//     currentNode = (RBTreeBlockHeader*)memPools[threadIndex].freeList;
 
-    while (currentNode != NULL){
-        if(get_full(currentNode)){
-            printf(" FULL |");
-        } else {
-            printf(" FREE |");
-        }
-        currentNode = get_next_list_header(currentNode);
-    }
-    printf(" \n\n");
-}
+//     while (currentNode != NULL){
+//         if(get_full(currentNode)){
+//             printf(" FULL |");
+//         } else {
+//             printf(" FREE |");
+//         }
+//         currentNode = get_next_list_header(currentNode);
+//     }
+//     printf(" \n\n");
+// }
 
 
 __device__ void debug_print_full_list(){
@@ -251,13 +260,14 @@ __device__ void debug_print_full_list(){
 
 //------------------------------------------------------------------------------------START OF ACTUAL FUNCTIONS FOR MALLOC--------------------------------------------------------------------------------------------
 
-__device__ void init_gpu_buffer(uint incomingMemSize){
+__device__ void init_gpu_buffer(unsigned int incomingMemSize){
 
     
 
     extern __shared__ unsigned char smem[];
 
     uint threadIndex = get_linear_thread_index();
+
     // printf("linear thread index: %d\n",threadIndex);
     if(threadIndex == 0){
         sharedMemSize = incomingMemSize;
@@ -266,6 +276,7 @@ __device__ void init_gpu_buffer(uint incomingMemSize){
 
 
     //this is necessary as the other threads must wait for the memSize to be assigned properly otherwise they will run ahead.
+    //this can be optimized by leaving it on the user to do this division ahead of time.
     __syncthreads();
     
     /*
@@ -276,8 +287,7 @@ __device__ void init_gpu_buffer(uint incomingMemSize){
     At most it is acceptable to have 2^15 bytes,
     however past that the bit packing will be upset and the size of the offset variables will need to be upgraded
 
-    This is particularly important if a kernel is launched with few threads but large shared memory
-    
+    THIS IS PARTICULARLY IMPORTANT IF A KERNEL IS LAUNCHED WITH FEW THREADS BUT A LARGE SHARED MEMORY POOL
     */
 
     uint threadPoolSize = get_thread_pool_size();
@@ -290,24 +300,37 @@ __device__ void init_gpu_buffer(uint incomingMemSize){
     // printf("thread index %d's memory pool pointer: %p\n",threadIndex,memPools[threadIndex].memBuffer);
 
 
-    // printf("mempool start pointer: %p\n", memPool.memBuffer);
+    // printf("mempool start pointer: %p\n", memPools[threadIndex].memBuffer);
 
     RBTreeBlockHeader *header = (RBTreeBlockHeader*)memPools[threadIndex].memBuffer;
-    header->fullSize = (threadPoolSize - (sizeof(RBTreeBlockHeader) + sizeof(BlockFooter))) & 0x7FFF;
-    header->nextOffset = 0;
-    header->prevOffset = 0;
 
-    list_push_front(&memPools[threadIndex].freeList, header);
+
+    int16_t tempSize = (threadPoolSize - (sizeof(RBTreeBlockHeader) + sizeof(BlockFooter)));
+    header->fullSize = tempSize & 0x7FFF;
+    header->leftOffset = 0;
+    header->rightOffset = 0;
+    header->parentOffset = 0;
+
+    memPools[threadIndex].freeList = NULL;
+
+
+    insert_node(&memPools[threadIndex].freeList,header,tempSize);
+
+
+
+    //list_push_front(&memPools[threadIndex].freeList, header);
 
     BlockFooter *footer = get_footer(header);
     footer->headerOffset = get_offset((unsigned char*)footer, (unsigned char*)header);
+
+
 }
 
 __device__ void* cmalloc(unsigned long size){
 
     uint threadIndex = get_linear_thread_index();
 
-    if(memPools[threadIndex].freeList == NULL || get_node_size(memPools[threadIndex].freeList) < (size + (int16_t)sizeof(RBTreeBlockHeader) + (int16_t)sizeof(BlockFooter))){
+    if(&memPools[threadIndex].freeList == NULL || get_node_size(memPools[threadIndex].freeList) < (size + (int16_t)sizeof(RBTreeBlockHeader) + (int16_t)sizeof(BlockFooter))){
         // printf("malloc eval null exit\n");
         return NULL;
     }
@@ -326,8 +349,9 @@ __device__ void* cmalloc(unsigned long size){
     newlyAllocatedFooter->headerOffset = get_offset((unsigned char*)newlyAllocatedFooter, (unsigned char*)newlyAllocatedHeader);
 
     // Remove from free list before modifying
-    list_remove(&memPools[threadIndex].freeList, newlyAllocatedHeader);
-    list_push_front(&memPools[threadIndex].fullList, newlyAllocatedHeader);
+    remove(&memPools[threadIndex].freeList,newlyAllocatedHeader);
+    // list_remove(&memPools[threadIndex].freeList, newlyAllocatedHeader);
+    // list_push_front(&memPools[threadIndex].fullList, newlyAllocatedHeader);
 
     // Create new free block if there's enough space
     uint16_t remainingSize = preAllocationSize - (sizeToAlloc + sizeof(RBTreeBlockHeader) + sizeof(BlockFooter));
@@ -335,16 +359,17 @@ __device__ void* cmalloc(unsigned long size){
     if(remainingSize > 0){
         RBTreeBlockHeader* newFreeHeader = (RBTreeBlockHeader*)((unsigned char*)(newlyAllocatedFooter) + sizeof(BlockFooter));
         newFreeHeader->fullSize = remainingSize & 0x7FFF; //both sets size and sets empty
-        newFreeHeader->nextOffset = 0;
-        newFreeHeader->prevOffset = 0;
+        newFreeHeader->leftOffset = 0;
+        newFreeHeader->rightOffset = 0;
+        newFreeHeader->parentOffset = 0;
 
         BlockFooter* newFreeFooter = get_footer(newFreeHeader);
         newFreeFooter->headerOffset = get_offset((unsigned char*)newFreeFooter, (unsigned char*)newFreeHeader);
 
-        list_push_front(&memPools[threadIndex].freeList, newFreeHeader);
+        // list_push_front(&memPools[threadIndex].freeList, newFreeHeader);
+        insert_node(&memPools[threadIndex].freeList,newFreeHeader,remainingSize);
     }
 
-    sort_free_list(threadIndex);
 
     void* return_index = (unsigned char*)newlyAllocatedHeader + sizeof(RBTreeBlockHeader);
     return return_index;
@@ -363,8 +388,7 @@ __device__ void cfree(void* addressForDeletion){
     }
 
     RBTreeBlockHeader* deletion_target = (RBTreeBlockHeader*)((unsigned char*)addressForDeletion - sizeof(RBTreeBlockHeader));
-    list_remove(&memPools[threadIndex].fullList, deletion_target);
-
+    
     deletion_target->fullSize &= 0x7FFF;
 
     int8_t forward_coalesce_valid = 0;
@@ -391,13 +415,14 @@ __device__ void cfree(void* addressForDeletion){
         BlockFooter* next_block_footer = get_footer(deletion_target);
         next_block_footer->headerOffset = get_offset((unsigned char*)next_block_footer, (unsigned char*)deletion_target);
 
-        list_remove(&memPools[threadIndex].freeList, nextHeader);
+        // list_remove(&memPools[threadIndex].freeList, nextHeader);
+        remove(&memPools[threadIndex].freeList,nextHeader);
     }
 
     // Backward coalesce
     if(backward_coalesce_valid){
-        list_remove(&memPools[threadIndex].freeList, prevHeader);
-        
+        // list_remove(&memPools[threadIndex].freeList, prevHeader);
+        remove(&memPools[threadIndex].freeList, prevHeader);
         int16_t tempSize = get_node_size(prevHeader);
 
         tempSize += sizeof(BlockFooter) + sizeof(RBTreeBlockHeader) + get_node_size(deletion_target);
@@ -407,10 +432,12 @@ __device__ void cfree(void* addressForDeletion){
         BlockFooter* current_block_footer = get_footer(prevHeader);
         current_block_footer->headerOffset = get_offset((unsigned char*)current_block_footer, (unsigned char*)prevHeader);
         
-        list_push_front(&memPools[threadIndex].freeList, prevHeader);
+        // list_push_front(&memPools[threadIndex].freeList, prevHeader);
+        insert_node(&memPools[threadIndex].freeList, prevHeader, tempSize);
     } else {
-        list_push_front(&memPools[threadIndex].freeList, deletion_target);
+        insert_node(&memPools[threadIndex].freeList, deletion_target, deletion_target->fullSize & 0x3FFF);
+        // list_push_front(&memPools[threadIndex].freeList, deletion_target);
     }
 
-    sort_free_list(threadIndex);
+    // sort_free_list(threadIndex);
 }
