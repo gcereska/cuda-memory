@@ -23,14 +23,7 @@ __device__ uint sharedMemSize;
 //------------------------------------------------------------------------------------CUDA HELPER FUNCTIONS--------------------------------------------------------------------------------------------
 
 __device__ uint get_thread_pool_size(){
-    int totalThreads = blockDim.x * blockDim.y * blockDim.z;
-    // printf("shared mem size: %d\n",sharedMemSize);
-
-    // printf("total threads: %d\n",totalThreads);
-
-
-
-    return (sharedMemSize/totalThreads);
+    return (sharedMemSize);
 }
 
 __device__ uint get_linear_thread_index(){
@@ -101,6 +94,7 @@ __device__ RBTreeBlockHeader* get_next_header(RBTreeBlockHeader* currentHeader){
     int currentHeaderOffset = get_offset(memPools[threadIndex].memBuffer, (unsigned char*)currentHeader);
     uint64_t temp_size = get_node_size(currentHeader);
     
+
     if((currentHeaderOffset + temp_size + sizeof(RBTreeBlockHeader) + sizeof(BlockFooter)) >= threadPoolSize){
         return NULL;
     }
@@ -260,6 +254,7 @@ __device__ void debug_print_full_list(){
 
 //------------------------------------------------------------------------------------START OF ACTUAL FUNCTIONS FOR MALLOC--------------------------------------------------------------------------------------------
 
+//This function will take in the size of shared mem/#threads
 __device__ void init_gpu_buffer(unsigned int incomingMemSize){
 
     
@@ -268,17 +263,12 @@ __device__ void init_gpu_buffer(unsigned int incomingMemSize){
 
     uint threadIndex = get_linear_thread_index();
 
-    // printf("linear thread index: %d\n",threadIndex);
+    // // printf("linear thread index: %d\n",threadIndex);
+   
     if(threadIndex == 0){
         sharedMemSize = incomingMemSize;
-        // printf("size of pool on thread 0: %d\n",get_thread_pool_size());
     }
-
-
-    //this is necessary as the other threads must wait for the memSize to be assigned properly otherwise they will run ahead.
-    //this can be optimized by leaving it on the user to do this division ahead of time.
     __syncthreads();
-    
     /*
     
     Because all operations use an offset based scheme to find neighbors,
@@ -290,12 +280,14 @@ __device__ void init_gpu_buffer(unsigned int incomingMemSize){
     THIS IS PARTICULARLY IMPORTANT IF A KERNEL IS LAUNCHED WITH FEW THREADS BUT A LARGE SHARED MEMORY POOL
     */
 
-    uint threadPoolSize = get_thread_pool_size();
-
-    // printf("thread pool size: %d\n",threadPoolSize);
 
 
-    memPools[threadIndex].memBuffer = smem + (threadPoolSize * threadIndex);
+    // uint threadPoolSize = get_thread_pool_size();
+
+    printf("thread pool size: %d\n",incomingMemSize);
+
+
+    memPools[threadIndex].memBuffer = smem + (incomingMemSize * threadIndex);
 
     // printf("thread index %d's memory pool pointer: %p\n",threadIndex,memPools[threadIndex].memBuffer);
 
@@ -305,7 +297,7 @@ __device__ void init_gpu_buffer(unsigned int incomingMemSize){
     RBTreeBlockHeader *header = (RBTreeBlockHeader*)memPools[threadIndex].memBuffer;
 
 
-    int16_t tempSize = (threadPoolSize - (sizeof(RBTreeBlockHeader) + sizeof(BlockFooter)));
+    int16_t tempSize = (incomingMemSize - (sizeof(RBTreeBlockHeader) + sizeof(BlockFooter)));
     header->fullSize = tempSize & 0x7FFF;
     header->leftOffset = 0;
     header->rightOffset = 0;
@@ -331,7 +323,7 @@ __device__ void* cmalloc(unsigned long size){
     uint threadIndex = get_linear_thread_index();
 
     if(&memPools[threadIndex].freeList == NULL || get_node_size(memPools[threadIndex].freeList) < (size + (int16_t)sizeof(RBTreeBlockHeader) + (int16_t)sizeof(BlockFooter))){
-        // printf("malloc eval null exit\n");
+        printf("malloc eval null exit\n");
         return NULL;
     }
 
@@ -342,14 +334,14 @@ __device__ void* cmalloc(unsigned long size){
     uint8_t offset = (8 - ((size + sizeof(BlockFooter)) % 8));
     uint16_t sizeToAlloc = size + offset;
 
-    newlyAllocatedHeader->fullSize = sizeToAlloc & 0x7FFF;
+    newlyAllocatedHeader->fullSize = sizeToAlloc & 0x3FFF;
     newlyAllocatedHeader->fullSize |= 0x8000; //sets full
 
     BlockFooter* newlyAllocatedFooter = get_footer(newlyAllocatedHeader);
     newlyAllocatedFooter->headerOffset = get_offset((unsigned char*)newlyAllocatedFooter, (unsigned char*)newlyAllocatedHeader);
 
     // Remove from free list before modifying
-    remove(&memPools[threadIndex].freeList,newlyAllocatedHeader);
+    remove(&memPools[threadIndex].freeList, newlyAllocatedHeader);
     // list_remove(&memPools[threadIndex].freeList, newlyAllocatedHeader);
     // list_push_front(&memPools[threadIndex].fullList, newlyAllocatedHeader);
 

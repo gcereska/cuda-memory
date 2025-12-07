@@ -9,6 +9,11 @@
 __device__ static Direction direction(RBTreeBlockHeader* N) {
 
     RBTreeBlockHeader* parent = get_parent(N);
+    
+    if (!parent) {
+        return LEFT;  
+    }
+
     RBTreeBlockHeader* parentRight = get_right_child(parent);
 
     return N == parentRight ? RIGHT : LEFT;
@@ -302,27 +307,32 @@ __device__ void insert(RBTreeBlockHeader** root, RBTreeBlockHeader* node, RBTree
 }
 
 __device__ void remove(RBTreeBlockHeader** root, RBTreeBlockHeader* node) {
+
+
 	RBTreeBlockHeader* parent = get_parent(node);
+    if (!parent) {
+        *root = NULL;
+        return;
+    }
 
 	RBTreeBlockHeader* sibling;
 	RBTreeBlockHeader* close_nephew;
 	RBTreeBlockHeader* distant_nephew;
 
+
 	Direction dir = direction(node);
 
     if(dir == LEFT){
-        RBTreeBlockHeader* parentLeftChild = get_left_child(parent);
-        parentLeftChild = NULL;
+        parent->leftOffset = 0;
     }
     else{
-        RBTreeBlockHeader* parentRightChild = get_left_child(parent);
-        parentRightChild = NULL;
+        parent->rightOffset = 0;
     }
-
 	goto start_balance;
 
 	do {
 		dir = direction(node);
+
 start_balance:
         if(dir == LEFT){
             sibling = get_right_child(parent);

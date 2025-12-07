@@ -73,7 +73,9 @@ int main() {
     cudaMalloc(&d_ptrs, n * sizeof(int*));
 
     printf("post mem alloc\n");
-    allocate_and_write<<<1, n, sharedMemSize>>>(d_ptrs, n, sharedMemSize);
+
+    uint threadPoolSize = sharedMemSize/n;
+    allocate_and_write<<<1, n, sharedMemSize>>>(d_ptrs, n, threadPoolSize);
     cudaDeviceSynchronize();
 
     printf("post alloc & write\n");
