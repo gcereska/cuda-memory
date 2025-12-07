@@ -51,6 +51,7 @@ __global__ void runTests(TestOperation *ops, uint sharedMemSize) {
     // #endif
     init_gpu_buffer(sharedMemSize);
 
+
     if(idx == 0){
         debug_print_buffer();
     }
@@ -62,6 +63,7 @@ __global__ void runTests(TestOperation *ops, uint sharedMemSize) {
     for (unsigned int i = 0; i < OPS_PER_THREAD; i++) {
         unsigned int opIndex = idx * OPS_PER_THREAD + i;
         if (ops[opIndex].isAlloc) {
+
             void *ptr = cmalloc(ops[opIndex].numBytes);
             allocatedPtrs[i] = ptr;
             for (unsigned long j = 0; j < ops[opIndex].numBytes; j++) {
@@ -116,11 +118,11 @@ int main(int argc, char **argv) {
         printf("Thread %d operations:\n", i);
         for (int j = 0; j < OPS_PER_THREAD; j++) {
             int idx = i * OPS_PER_THREAD + j;
-            printf("  Op %d: %s, numBytes=%lu, corrospondingAlloc=%d\n",
-                   j,
-                   ops[idx].isAlloc ? "ALLOC" : "FREE",
-                   ops[idx].numBytes,
-                   ops[idx].corrospondingAlloc);
+            // printf("  Op %d: %s, numBytes=%lu, corrospondingAlloc=%d\n",
+            //        j,
+            //        ops[idx].isAlloc ? "ALLOC" : "FREE",
+            //        ops[idx].numBytes,
+            //        ops[idx].corrospondingAlloc);
         }
     }
     
@@ -131,7 +133,8 @@ int main(int argc, char **argv) {
     fflush(stdout); // Force print before kernel launch
 
     size_t sharedMemSize = 49152;
-    runTests<<<1, NUM_THREADS,sharedMemSize>>>(d_ops, sharedMemSize);
+    size_t threadPoolSize = sharedMemSize/NUM_THREADS;
+    runTests<<<1, NUM_THREADS,sharedMemSize>>>(d_ops, threadPoolSize);
     cudaDeviceSynchronize();
 
     printf("warp complete\n");

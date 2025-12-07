@@ -26,10 +26,13 @@ typedef struct {
     
     int16_t headerOffset;
 } BlockFooter;
+
 typedef struct {
     unsigned char* memBuffer;
     BlockHeader *freeList;
     BlockHeader *fullList;
+
+    uint threadPoolSize;
 } MemBufferStorage;
 
 
