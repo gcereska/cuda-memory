@@ -291,8 +291,6 @@ __device__ void insert(RBTreeBlockHeader** root, RBTreeBlockHeader* node, RBTree
         
         RBTreeBlockHeader* uncle = NULL;
         
-        // ... rest of your code with similar logging
-        
         set_color(parent, BLACK);
         set_color(uncle, BLACK);
         set_color(grandparent, RED);
