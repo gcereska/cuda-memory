@@ -4,7 +4,7 @@
 #include <getopt.h>
 #include <assert.h>
 
-#include "poolAllocBST.cuh"
+#include "poolAlloc.cuh"
 
 #define NUM_THREADS 64
 #define OPS_PER_THREAD 30
