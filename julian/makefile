@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -std=c11
 
 
-COMMON = cpu_custom_malloc.c
+COMMON = cpuPoolMalloc.c
 
 TESTS = $(wildcard test*.c)
 
