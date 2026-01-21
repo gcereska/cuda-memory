@@ -1,0 +1,12 @@
+cd "...\cuda_allocator"
+
+// before build
+cmake -S . -B build
+
+// to build/rebuild
+cmake --build build --config Release
+
+// to run tests
+build\Release\test_thread.exe
+build\Release\fuzzy_thread.exe -s 67
+// -s is to indicate rng seed
