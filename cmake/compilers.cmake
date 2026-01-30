@@ -47,7 +47,7 @@ endif()
 # Setup for MSVC compiler (version >= 2012):
 #
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-  message(FATAL_ERROR "\n" "MSVC compiler not implemented.\n\n")
+  #message(FATAL_ERROR "\n" "MSVC compiler not implemented.\n\n")
   # set(_flags ${CMAKE_SOURCE_DIR}/cmake/compiler_flags_msvc.cmake)
   # message(STATUS "Include ${_flags}") include(${_flags}) set(KNOWN_COMPILER
   # TRUE)
