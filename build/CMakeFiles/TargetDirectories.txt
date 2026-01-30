@@ -1,0 +1,5 @@
+/home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles/allocator_lib.dir
+/home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles/test_thread.dir
+/home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles/fuzzy_thread.dir
+/home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles/edit_cache.dir
+/home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles/rebuild_cache.dir

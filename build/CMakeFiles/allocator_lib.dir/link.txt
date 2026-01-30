@@ -1,0 +1,2 @@
+/usr/bin/ar qc liballocator_lib.a CMakeFiles/allocator_lib.dir/src/threadlocal.cu.o
+/usr/bin/ranlib liballocator_lib.a
