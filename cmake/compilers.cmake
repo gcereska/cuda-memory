@@ -51,6 +51,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   # set(_flags ${CMAKE_SOURCE_DIR}/cmake/compiler_flags_msvc.cmake)
   # message(STATUS "Include ${_flags}") include(${_flags}) set(KNOWN_COMPILER
   # TRUE)
+  set(KNOWN_COMPILER TRUE)
 endif()
 
 if(NOT KNOWN_COMPILER)
