@@ -54,107 +54,168 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/chengcli/Model/cuda-memory/cuda_allocator
+CMAKE_SOURCE_DIR = /home/chengcli/Model/cuda-memory
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/chengcli/Model/cuda-memory/cuda_allocator/build
+CMAKE_BINARY_DIR = /home/chengcli/Model/cuda-memory/build
 
 #=============================================================================
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/allocator_lib.dir/all
-all: CMakeFiles/test_thread.dir/all
-all: CMakeFiles/fuzzy_thread.dir/all
+all: src/all
+all: tests/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
-preinstall:
+preinstall: src/preinstall
+preinstall: tests/preinstall
 .PHONY : preinstall
 
 # The main recursive "clean" target.
-clean: CMakeFiles/allocator_lib.dir/clean
-clean: CMakeFiles/test_thread.dir/clean
-clean: CMakeFiles/fuzzy_thread.dir/clean
+clean: src/clean
+clean: tests/clean
 .PHONY : clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/allocator_lib.dir
+# Directory level rules for directory src
 
-# All Build rule for target.
-CMakeFiles/allocator_lib.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/allocator_lib.dir/build.make CMakeFiles/allocator_lib.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/allocator_lib.dir/build.make CMakeFiles/allocator_lib.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles --progress-num=1,2 "Built target allocator_lib"
-.PHONY : CMakeFiles/allocator_lib.dir/all
+# Recursive "all" directory target.
+src/all: src/CMakeFiles/cuda-memory_release.dir/all
+src/all: src/CMakeFiles/cuda-memory_cuda_release.dir/all
+.PHONY : src/all
 
-# Build rule for subdir invocation for target.
-CMakeFiles/allocator_lib.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles 2
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/allocator_lib.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles 0
-.PHONY : CMakeFiles/allocator_lib.dir/rule
+# Recursive "preinstall" directory target.
+src/preinstall:
+.PHONY : src/preinstall
 
-# Convenience name for target.
-allocator_lib: CMakeFiles/allocator_lib.dir/rule
-.PHONY : allocator_lib
-
-# clean rule for target.
-CMakeFiles/allocator_lib.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/allocator_lib.dir/build.make CMakeFiles/allocator_lib.dir/clean
-.PHONY : CMakeFiles/allocator_lib.dir/clean
+# Recursive "clean" directory target.
+src/clean: src/CMakeFiles/cuda-memory_release.dir/clean
+src/clean: src/CMakeFiles/cuda-memory_cuda_release.dir/clean
+.PHONY : src/clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/test_thread.dir
+# Directory level rules for directory tests
 
-# All Build rule for target.
-CMakeFiles/test_thread.dir/all: CMakeFiles/allocator_lib.dir/all
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_thread.dir/build.make CMakeFiles/test_thread.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_thread.dir/build.make CMakeFiles/test_thread.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles --progress-num=6,7,8 "Built target test_thread"
-.PHONY : CMakeFiles/test_thread.dir/all
+# Recursive "all" directory target.
+tests/all: tests/CMakeFiles/allocator_test.release.dir/all
+tests/all: tests/CMakeFiles/fuzzy-test-gpu.release.dir/all
+.PHONY : tests/all
 
-# Build rule for subdir invocation for target.
-CMakeFiles/test_thread.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles 5
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/test_thread.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles 0
-.PHONY : CMakeFiles/test_thread.dir/rule
+# Recursive "preinstall" directory target.
+tests/preinstall:
+.PHONY : tests/preinstall
 
-# Convenience name for target.
-test_thread: CMakeFiles/test_thread.dir/rule
-.PHONY : test_thread
-
-# clean rule for target.
-CMakeFiles/test_thread.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_thread.dir/build.make CMakeFiles/test_thread.dir/clean
-.PHONY : CMakeFiles/test_thread.dir/clean
+# Recursive "clean" directory target.
+tests/clean: tests/CMakeFiles/allocator_test.release.dir/clean
+tests/clean: tests/CMakeFiles/fuzzy-test-gpu.release.dir/clean
+.PHONY : tests/clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/fuzzy_thread.dir
+# Target rules for target src/CMakeFiles/cuda-memory_release.dir
 
 # All Build rule for target.
-CMakeFiles/fuzzy_thread.dir/all: CMakeFiles/allocator_lib.dir/all
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fuzzy_thread.dir/build.make CMakeFiles/fuzzy_thread.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fuzzy_thread.dir/build.make CMakeFiles/fuzzy_thread.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles --progress-num=3,4,5 "Built target fuzzy_thread"
-.PHONY : CMakeFiles/fuzzy_thread.dir/all
+src/CMakeFiles/cuda-memory_release.dir/all:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/cuda-memory_release.dir/build.make src/CMakeFiles/cuda-memory_release.dir/depend
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/cuda-memory_release.dir/build.make src/CMakeFiles/cuda-memory_release.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/chengcli/Model/cuda-memory/build/CMakeFiles --progress-num=6,7,8,9 "Built target cuda-memory_release"
+.PHONY : src/CMakeFiles/cuda-memory_release.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/fuzzy_thread.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles 5
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/fuzzy_thread.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles 0
-.PHONY : CMakeFiles/fuzzy_thread.dir/rule
+src/CMakeFiles/cuda-memory_release.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/chengcli/Model/cuda-memory/build/CMakeFiles 4
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/cuda-memory_release.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/chengcli/Model/cuda-memory/build/CMakeFiles 0
+.PHONY : src/CMakeFiles/cuda-memory_release.dir/rule
 
 # Convenience name for target.
-fuzzy_thread: CMakeFiles/fuzzy_thread.dir/rule
-.PHONY : fuzzy_thread
+cuda-memory_release: src/CMakeFiles/cuda-memory_release.dir/rule
+.PHONY : cuda-memory_release
 
 # clean rule for target.
-CMakeFiles/fuzzy_thread.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fuzzy_thread.dir/build.make CMakeFiles/fuzzy_thread.dir/clean
-.PHONY : CMakeFiles/fuzzy_thread.dir/clean
+src/CMakeFiles/cuda-memory_release.dir/clean:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/cuda-memory_release.dir/build.make src/CMakeFiles/cuda-memory_release.dir/clean
+.PHONY : src/CMakeFiles/cuda-memory_release.dir/clean
+
+#=============================================================================
+# Target rules for target src/CMakeFiles/cuda-memory_cuda_release.dir
+
+# All Build rule for target.
+src/CMakeFiles/cuda-memory_cuda_release.dir/all:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/cuda-memory_cuda_release.dir/build.make src/CMakeFiles/cuda-memory_cuda_release.dir/depend
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/cuda-memory_cuda_release.dir/build.make src/CMakeFiles/cuda-memory_cuda_release.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/chengcli/Model/cuda-memory/build/CMakeFiles --progress-num=4,5 "Built target cuda-memory_cuda_release"
+.PHONY : src/CMakeFiles/cuda-memory_cuda_release.dir/all
+
+# Build rule for subdir invocation for target.
+src/CMakeFiles/cuda-memory_cuda_release.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/chengcli/Model/cuda-memory/build/CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 src/CMakeFiles/cuda-memory_cuda_release.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/chengcli/Model/cuda-memory/build/CMakeFiles 0
+.PHONY : src/CMakeFiles/cuda-memory_cuda_release.dir/rule
+
+# Convenience name for target.
+cuda-memory_cuda_release: src/CMakeFiles/cuda-memory_cuda_release.dir/rule
+.PHONY : cuda-memory_cuda_release
+
+# clean rule for target.
+src/CMakeFiles/cuda-memory_cuda_release.dir/clean:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/cuda-memory_cuda_release.dir/build.make src/CMakeFiles/cuda-memory_cuda_release.dir/clean
+.PHONY : src/CMakeFiles/cuda-memory_cuda_release.dir/clean
+
+#=============================================================================
+# Target rules for target tests/CMakeFiles/allocator_test.release.dir
+
+# All Build rule for target.
+tests/CMakeFiles/allocator_test.release.dir/all: src/CMakeFiles/cuda-memory_release.dir/all
+tests/CMakeFiles/allocator_test.release.dir/all: src/CMakeFiles/cuda-memory_cuda_release.dir/all
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/allocator_test.release.dir/build.make tests/CMakeFiles/allocator_test.release.dir/depend
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/allocator_test.release.dir/build.make tests/CMakeFiles/allocator_test.release.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/chengcli/Model/cuda-memory/build/CMakeFiles --progress-num=1,2,3 "Built target allocator_test.release"
+.PHONY : tests/CMakeFiles/allocator_test.release.dir/all
+
+# Build rule for subdir invocation for target.
+tests/CMakeFiles/allocator_test.release.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/chengcli/Model/cuda-memory/build/CMakeFiles 9
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/allocator_test.release.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/chengcli/Model/cuda-memory/build/CMakeFiles 0
+.PHONY : tests/CMakeFiles/allocator_test.release.dir/rule
+
+# Convenience name for target.
+allocator_test.release: tests/CMakeFiles/allocator_test.release.dir/rule
+.PHONY : allocator_test.release
+
+# clean rule for target.
+tests/CMakeFiles/allocator_test.release.dir/clean:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/allocator_test.release.dir/build.make tests/CMakeFiles/allocator_test.release.dir/clean
+.PHONY : tests/CMakeFiles/allocator_test.release.dir/clean
+
+#=============================================================================
+# Target rules for target tests/CMakeFiles/fuzzy-test-gpu.release.dir
+
+# All Build rule for target.
+tests/CMakeFiles/fuzzy-test-gpu.release.dir/all: src/CMakeFiles/cuda-memory_release.dir/all
+tests/CMakeFiles/fuzzy-test-gpu.release.dir/all: src/CMakeFiles/cuda-memory_cuda_release.dir/all
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/fuzzy-test-gpu.release.dir/build.make tests/CMakeFiles/fuzzy-test-gpu.release.dir/depend
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/fuzzy-test-gpu.release.dir/build.make tests/CMakeFiles/fuzzy-test-gpu.release.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/chengcli/Model/cuda-memory/build/CMakeFiles --progress-num=10,11,12 "Built target fuzzy-test-gpu.release"
+.PHONY : tests/CMakeFiles/fuzzy-test-gpu.release.dir/all
+
+# Build rule for subdir invocation for target.
+tests/CMakeFiles/fuzzy-test-gpu.release.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/chengcli/Model/cuda-memory/build/CMakeFiles 9
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 tests/CMakeFiles/fuzzy-test-gpu.release.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/chengcli/Model/cuda-memory/build/CMakeFiles 0
+.PHONY : tests/CMakeFiles/fuzzy-test-gpu.release.dir/rule
+
+# Convenience name for target.
+fuzzy-test-gpu.release: tests/CMakeFiles/fuzzy-test-gpu.release.dir/rule
+.PHONY : fuzzy-test-gpu.release
+
+# clean rule for target.
+tests/CMakeFiles/fuzzy-test-gpu.release.dir/clean:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/fuzzy-test-gpu.release.dir/build.make tests/CMakeFiles/fuzzy-test-gpu.release.dir/clean
+.PHONY : tests/CMakeFiles/fuzzy-test-gpu.release.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

@@ -29,16 +29,8 @@ set(namel ${PROJECT_NAME})
 string(TOUPPER ${namel} nameu)
 
 file(GLOB src_files 
-  *.cpp
-  math/*.cpp
-  utils/*.cpp
-  cpu/*.c
-  tracker/*.cpp
+  cpu/pmalloc_*.cpp
   )
-
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  list(APPEND src_files utils/DispatchStub.cpp)
-endif()
 
 add_library(${namel}_${buildl}
     STATIC
@@ -59,11 +51,7 @@ add_library(${namel}::${namel} ALIAS ${namel}_${buildl})
 # CUDA source codes
 if (CUDAToolkit_FOUND)
   file(GLOB cu_src_files 
-    *.cu
-    math/*.cu
-    utils/*.cu
-    gpu/*.cu
-    tracker/*.cu
+    cuda/threadlocal.cu
     )
 
   add_library(${namel}_cuda_${buildl}

@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/chengcli/Model/cuda-memory/cuda_allocator
+CMAKE_SOURCE_DIR = /home/chengcli/Model/cuda-memory
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/chengcli/Model/cuda-memory/cuda_allocator/build
+CMAKE_BINARY_DIR = /home/chengcli/Model/cuda-memory/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles /home/chengcli/Model/cuda-memory/cuda_allocator/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/chengcli/Model/cuda-memory/build/CMakeFiles /home/chengcli/Model/cuda-memory/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/chengcli/Model/cuda-memory/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -117,115 +117,56 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named allocator_lib
+# Target rules for targets named cuda-memory_release
 
 # Build rule for target.
-allocator_lib: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 allocator_lib
-.PHONY : allocator_lib
+cuda-memory_release: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 cuda-memory_release
+.PHONY : cuda-memory_release
 
 # fast build rule for target.
-allocator_lib/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/allocator_lib.dir/build.make CMakeFiles/allocator_lib.dir/build
-.PHONY : allocator_lib/fast
+cuda-memory_release/fast:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/cuda-memory_release.dir/build.make src/CMakeFiles/cuda-memory_release.dir/build
+.PHONY : cuda-memory_release/fast
 
 #=============================================================================
-# Target rules for targets named test_thread
+# Target rules for targets named cuda-memory_cuda_release
 
 # Build rule for target.
-test_thread: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 test_thread
-.PHONY : test_thread
+cuda-memory_cuda_release: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 cuda-memory_cuda_release
+.PHONY : cuda-memory_cuda_release
 
 # fast build rule for target.
-test_thread/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_thread.dir/build.make CMakeFiles/test_thread.dir/build
-.PHONY : test_thread/fast
+cuda-memory_cuda_release/fast:
+	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/cuda-memory_cuda_release.dir/build.make src/CMakeFiles/cuda-memory_cuda_release.dir/build
+.PHONY : cuda-memory_cuda_release/fast
 
 #=============================================================================
-# Target rules for targets named fuzzy_thread
+# Target rules for targets named allocator_test.release
 
 # Build rule for target.
-fuzzy_thread: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 fuzzy_thread
-.PHONY : fuzzy_thread
+allocator_test.release: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 allocator_test.release
+.PHONY : allocator_test.release
 
 # fast build rule for target.
-fuzzy_thread/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fuzzy_thread.dir/build.make CMakeFiles/fuzzy_thread.dir/build
-.PHONY : fuzzy_thread/fast
+allocator_test.release/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/allocator_test.release.dir/build.make tests/CMakeFiles/allocator_test.release.dir/build
+.PHONY : allocator_test.release/fast
 
-src/threadlocal.o: src/threadlocal.cu.o
-.PHONY : src/threadlocal.o
+#=============================================================================
+# Target rules for targets named fuzzy-test-gpu.release
 
-# target to build an object file
-src/threadlocal.cu.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/allocator_lib.dir/build.make CMakeFiles/allocator_lib.dir/src/threadlocal.cu.o
-.PHONY : src/threadlocal.cu.o
+# Build rule for target.
+fuzzy-test-gpu.release: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 fuzzy-test-gpu.release
+.PHONY : fuzzy-test-gpu.release
 
-src/threadlocal.i: src/threadlocal.cu.i
-.PHONY : src/threadlocal.i
-
-# target to preprocess a source file
-src/threadlocal.cu.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/allocator_lib.dir/build.make CMakeFiles/allocator_lib.dir/src/threadlocal.cu.i
-.PHONY : src/threadlocal.cu.i
-
-src/threadlocal.s: src/threadlocal.cu.s
-.PHONY : src/threadlocal.s
-
-# target to generate assembly for a file
-src/threadlocal.cu.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/allocator_lib.dir/build.make CMakeFiles/allocator_lib.dir/src/threadlocal.cu.s
-.PHONY : src/threadlocal.cu.s
-
-tests/allocator_test.o: tests/allocator_test.cu.o
-.PHONY : tests/allocator_test.o
-
-# target to build an object file
-tests/allocator_test.cu.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_thread.dir/build.make CMakeFiles/test_thread.dir/tests/allocator_test.cu.o
-.PHONY : tests/allocator_test.cu.o
-
-tests/allocator_test.i: tests/allocator_test.cu.i
-.PHONY : tests/allocator_test.i
-
-# target to preprocess a source file
-tests/allocator_test.cu.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_thread.dir/build.make CMakeFiles/test_thread.dir/tests/allocator_test.cu.i
-.PHONY : tests/allocator_test.cu.i
-
-tests/allocator_test.s: tests/allocator_test.cu.s
-.PHONY : tests/allocator_test.s
-
-# target to generate assembly for a file
-tests/allocator_test.cu.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/test_thread.dir/build.make CMakeFiles/test_thread.dir/tests/allocator_test.cu.s
-.PHONY : tests/allocator_test.cu.s
-
-tests/fuzzy-test-gpu.o: tests/fuzzy-test-gpu.cu.o
-.PHONY : tests/fuzzy-test-gpu.o
-
-# target to build an object file
-tests/fuzzy-test-gpu.cu.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fuzzy_thread.dir/build.make CMakeFiles/fuzzy_thread.dir/tests/fuzzy-test-gpu.cu.o
-.PHONY : tests/fuzzy-test-gpu.cu.o
-
-tests/fuzzy-test-gpu.i: tests/fuzzy-test-gpu.cu.i
-.PHONY : tests/fuzzy-test-gpu.i
-
-# target to preprocess a source file
-tests/fuzzy-test-gpu.cu.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fuzzy_thread.dir/build.make CMakeFiles/fuzzy_thread.dir/tests/fuzzy-test-gpu.cu.i
-.PHONY : tests/fuzzy-test-gpu.cu.i
-
-tests/fuzzy-test-gpu.s: tests/fuzzy-test-gpu.cu.s
-.PHONY : tests/fuzzy-test-gpu.s
-
-# target to generate assembly for a file
-tests/fuzzy-test-gpu.cu.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/fuzzy_thread.dir/build.make CMakeFiles/fuzzy_thread.dir/tests/fuzzy-test-gpu.cu.s
-.PHONY : tests/fuzzy-test-gpu.cu.s
+# fast build rule for target.
+fuzzy-test-gpu.release/fast:
+	$(MAKE) $(MAKESILENT) -f tests/CMakeFiles/fuzzy-test-gpu.release.dir/build.make tests/CMakeFiles/fuzzy-test-gpu.release.dir/build
+.PHONY : fuzzy-test-gpu.release/fast
 
 # Help Target
 help:
@@ -235,18 +176,10 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... allocator_lib"
-	@echo "... fuzzy_thread"
-	@echo "... test_thread"
-	@echo "... src/threadlocal.o"
-	@echo "... src/threadlocal.i"
-	@echo "... src/threadlocal.s"
-	@echo "... tests/allocator_test.o"
-	@echo "... tests/allocator_test.i"
-	@echo "... tests/allocator_test.s"
-	@echo "... tests/fuzzy-test-gpu.o"
-	@echo "... tests/fuzzy-test-gpu.i"
-	@echo "... tests/fuzzy-test-gpu.s"
+	@echo "... allocator_test.release"
+	@echo "... cuda-memory_cuda_release"
+	@echo "... cuda-memory_release"
+	@echo "... fuzzy-test-gpu.release"
 .PHONY : help
 
 

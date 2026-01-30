@@ -1,5 +1,10 @@
-/home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles/allocator_lib.dir
-/home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles/test_thread.dir
-/home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles/fuzzy_thread.dir
-/home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles/edit_cache.dir
-/home/chengcli/Model/cuda-memory/cuda_allocator/build/CMakeFiles/rebuild_cache.dir
+/home/chengcli/Model/cuda-memory/build/CMakeFiles/edit_cache.dir
+/home/chengcli/Model/cuda-memory/build/CMakeFiles/rebuild_cache.dir
+/home/chengcli/Model/cuda-memory/build/src/CMakeFiles/cuda-memory_release.dir
+/home/chengcli/Model/cuda-memory/build/src/CMakeFiles/cuda-memory_cuda_release.dir
+/home/chengcli/Model/cuda-memory/build/src/CMakeFiles/edit_cache.dir
+/home/chengcli/Model/cuda-memory/build/src/CMakeFiles/rebuild_cache.dir
+/home/chengcli/Model/cuda-memory/build/tests/CMakeFiles/allocator_test.release.dir
+/home/chengcli/Model/cuda-memory/build/tests/CMakeFiles/fuzzy-test-gpu.release.dir
+/home/chengcli/Model/cuda-memory/build/tests/CMakeFiles/edit_cache.dir
+/home/chengcli/Model/cuda-memory/build/tests/CMakeFiles/rebuild_cache.dir

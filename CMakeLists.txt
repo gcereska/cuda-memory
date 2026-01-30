@@ -80,7 +80,7 @@ message(STATUS "${Blue}${PROJECT_NAME}-2. Setting up project parameters ...${Col
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/parameters.cmake)
 
 message(STATUS "${Blue}${PROJECT_NAME}-3. Setting up system libraries ...${ColorReset}")
-find_package(Torch REQUIRED)
+#find_package(Torch REQUIRED)
 if (CMAKE_CUDA_COMPILER)
   find_package(CUDAToolkit REQUIRED)
 else()
@@ -93,8 +93,6 @@ if (CUDAToolkit_FOUND)
 endif()
 
 message(STATUS "${Blue}${PROJECT_NAME}-4. Setting up project libraries ...${ColorReset}")
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/python/VERSION" PROJECT_VERSION)
-string(STRIP "${PROJECT_VERSION}" PROJECT_VERSION)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/configure.h.in configure.h @ONLY)
 add_subdirectory(src)
 

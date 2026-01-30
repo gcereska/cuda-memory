@@ -1,10 +1,9 @@
 //threadlocal.cu
-#include "../include/allocator.cuh" 
+
 #include <cuda_runtime.h>
 #include <cstdint>
 #include <cstddef>
-
-
+#include "allocator.cuh" 
 
 static constexpr int MAX_THREADS = 32; // 1 pool per thread, max 32 threads
 static constexpr size_t ALIGNMENT = 8; 
