@@ -5,7 +5,7 @@
 //#include <getopt.h> im doing the tests on my own windows device
 #include <assert.h>
 
-#include <cuda_memory/cuda/allocator.cuh>
+#include <src/cuda/allocator.cuh>
 
 #define NUM_THREADS 32 //changed from 128 to 32 // must be 32 exactly 1 thread per warp/pool
 #define OPS_PER_THREAD 30

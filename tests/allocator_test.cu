@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cassert>
 
-#include <cuda_memory/cuda/allocator.cuh>
+#include <src/cuda/allocator.cuh>
 
 // Test configuration
 static constexpr size_t SHARED_MEM_SIZE = 32 * 1024;  // 32 KB (safe under 48 KB limit)
