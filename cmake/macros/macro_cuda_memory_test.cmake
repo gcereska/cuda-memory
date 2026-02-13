@@ -6,30 +6,32 @@ string(TOLOWER ${CMAKE_BUILD_TYPE} buildl)
 string(TOUPPER ${CMAKE_BUILD_TYPE} buildu)
 string(TOUPPER ${PROJECT_NAME} projectu)
 
+#macro(memory_test namel)
+
 macro(cuda_memory_test namel)
-  add_executable(${namel}.${buildl} ${namel}.cu)
+  add_executable(${namel} ${namel}.cu ${ARGN})
 
-  set_target_properties(
-    ${namel}.${buildl}
-    PROPERTIES
-    CUDA_SEPARABLE_COMPILATION ON
-    )
+  set_target_properties(${namel}
+    PROPERTIES CUDA_SEPARABLE_COMPILATION ON
+  )
 
-  target_include_directories(
-    ${namel}.${buildl}
+  target_include_directories(${namel}
     PRIVATE ${CMAKE_BINARY_DIR}
             ${${projectu}_INCLUDE_DIR}
             ${TORCH_INCLUDE_DIR}
-            ${TORCH_API_INCLUDE_DIR})
+            ${TORCH_API_INCLUDE_DIR}
+  )
 
-  target_link_libraries(${namel}.${buildl}
+  target_link_libraries(${namel}
     PRIVATE ${PROJECT_NAME}::${PROJECT_NAME}
             ${TORCH_LIBRARY}
             ${TORCH_CPU_LIBRARY}
             ${C10_LIBRARY}
-            $<IF:$<BOOL:${CUDAToolkit_FOUND}>,${PROJECT_NAME}::${PROJECT_NAME}_cu,>
-            $<IF:$<BOOL:${CUDAToolkit_FOUND}>,${TORCH_CUDA_LIBRARY},>
-            $<IF:$<BOOL:${CUDAToolkit_FOUND}>,${C10_CUDA_LIBRARY},>)
+            $<IF:$<BOOL:${USE_CUDA}>,${PROJECT_NAME}::${PROJECT_NAME}_cu,>
+            $<IF:$<BOOL:${USE_CUDA}>,${TORCH_CUDA_LIBRARY},>
+            $<IF:$<BOOL:${USE_CUDA}>,${C10_CUDA_LIBRARY},>
+  )
 
-  add_test(NAME ${namel}.${buildl} COMMAND ${namel}.${buildl})
+  add_test(NAME ${namel} COMMAND ${namel})
 endmacro()
+

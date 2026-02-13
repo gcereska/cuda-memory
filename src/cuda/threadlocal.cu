@@ -5,6 +5,8 @@
 #include <cstddef>
 #include "allocator.cuh" 
 
+namespace thread_pool {
+
 static constexpr int MAX_THREADS = 32; // 1 pool per thread, max 32 threads
 static constexpr size_t ALIGNMENT = 8; 
 static constexpr uint16_t DEFAULT_OFFSET = 0xFFFF;
@@ -315,6 +317,8 @@ __device__ void pool_init(std::size_t total_bytes) {
 // Probably works
 __device__ void* pmalloc_best_fit(std::size_t size) {
 
+
+
     if (threadIdx.x >= MAX_THREADS) return nullptr; // throw error in future
 
     std::byte* shared_mem_ptr = get_shared_heap_base();
@@ -349,10 +353,6 @@ __device__ void* pmalloc_best_fit(std::size_t size) {
 }
 
 __device__ void* pmalloc(std::size_t size) {
-
-    // uncomment this to that pmalloc best fit just becomes the main pmalloc
-    // return pmalloc_best_fit(size);
-    // pmalloc best fit doesn't work currently
 
     if (threadIdx.x >= MAX_THREADS) return nullptr; // throw error in future
 
@@ -421,3 +421,5 @@ __device__ void pfree(void* user_ptr) {
     free_list_insert(&(pool_manager->free_heads[pool_idx]), merged, pool_start);
 
 }
+
+} // namespace thread_pool

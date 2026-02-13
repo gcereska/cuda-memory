@@ -4,7 +4,16 @@
 #include <cstdint>
 #include <cassert>
 
-#include <src/cuda/allocator.cuh>
+#include "allocator.cuh"
+//#include <src/cuda/allocator.cuh>
+
+#if defined(USE_THREAD_LOCAL)
+    namespace pool = thread_pool;
+#else
+    namespace pool = warp_pool;
+#endif
+
+using namespace pool;
 
 // Test configuration
 static constexpr size_t SHARED_MEM_SIZE = 32 * 1024;  // 32 KB (safe under 48 KB limit)

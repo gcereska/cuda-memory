@@ -1,3 +1,6 @@
+//#ifndef POOLALLOC_CU
+//#define POOLALLOC_CU
+
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -6,7 +9,7 @@
 
 #include "poolAlloc.cuh"
 
-
+namespace pmalloc_freelist {
 
 // #define GPU_MEM_POOL_SIZE 49152
 
@@ -114,8 +117,16 @@ __device__ void list_push_front(BlockHeader** list, BlockHeader* insertionNode){
         return;
     }
     
-    (*list)->prevOffset = get_offset((unsigned char*)*list, (unsigned char*)insertionNode);
-    insertionNode->nextOffset = get_offset((unsigned char*)insertionNode, (unsigned char*)*list);
+    bool found = false;
+    BlockHeader* current = *list;
+     while(current != NULL && get_next_list_header(current) != NULL && !found){
+        if(get_node_size(current) < get_node_size(insertionNode)){ //we want to insert in front of current if current is smaller
+            found = true;
+        }
+     }
+
+    (*list)->prevOffset = get_offset((unsigned char*)insertionNode, (unsigned char*)current);
+    insertionNode->nextOffset = get_offset((unsigned char*)current, (unsigned char*)insertionNode);
     insertionNode->prevOffset = 0;
     *list = insertionNode;
 }
@@ -460,3 +471,7 @@ __device__ void cfree(void* addressForDeletion){
 
     sort_free_list(threadIndex);
 }
+
+} // namespace pmalloc_freelist
+
+//#endif

@@ -30,6 +30,7 @@ string(TOUPPER ${namel} nameu)
 
 file(GLOB src_files 
   cpu/pmalloc_*.cpp
+  cpu/cpuPoolMalloc.c
   )
 
 add_library(${namel}_${buildl}
@@ -49,10 +50,14 @@ target_link_libraries(${namel}_${buildl}
 add_library(${namel}::${namel} ALIAS ${namel}_${buildl})
 
 # CUDA source codes
-if (CUDAToolkit_FOUND)
+if (USE_CUDA)
   file(GLOB cu_src_files 
     cuda/threadlocal.cu
+    cuda/poolAllocBST.cu
+    cuda/poolAlloc.cu
+    cuda/RBTree.cu
     )
+  # file(GLOB cu_src_files "cuda/*.cu")
 
   add_library(${namel}_cuda_${buildl}
       STATIC
@@ -66,8 +71,8 @@ if (CUDAToolkit_FOUND)
 
   target_link_libraries(${namel}_cuda_${buildl}
       PUBLIC
-      $<IF:$<BOOL:${CUDAToolkit_FOUND}>,CUDA::cudart,>
-      $<IF:$<BOOL:${CUDAToolkit_FOUND}>,CUDA::cudart_static,>
+      $<IF:$<BOOL:${USE_CUDA}>,CUDA::cudart,>
+      $<IF:$<BOOL:${USE_CUDA}>,CUDA::cudart_static,>
       )
 
   add_library(${namel}::${namel}_cu ALIAS ${namel}_cuda_${buildl})

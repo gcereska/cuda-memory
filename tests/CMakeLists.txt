@@ -4,21 +4,51 @@
 
 enable_testing()
 
-# C++ tests
-#memorypool_setup_test(fuzzy-test)
-#memorypool_setup_test(linalg-test)
-#memorypool_setup_test(volume-test)
 
-# cuda tests
-cuda_memory_test(allocator_test)
-cuda_memory_test(fuzzy-test-gpu)
-#setup_cuda_test(test-cuda)
-#setup_cuda_test(linalg-gpu)
-#setup_cuda_test(fuzzy-test-gpu)
-#setup_cuda_test(performance-test-gpu)
+add_executable(allocator_bench_all allocator_bench_all.cpp)
 
-#setup_python_test_script(performance-test-py)
-#setup_python_test_script(blocksize-test-py)
+target_link_libraries(allocator_bench_all 
+  PRIVATE 
+  ${PROJECT_NAME}::${PROJECT_NAME}
+)
+
+
+set(CPU_C_TESTS
+  test
+  testAllocationTooLarge
+  testInvalidDeletion
+  testLightFragmentation
+  testRigorousFragmentation
+)
+
+foreach(t ${CPU_C_TESTS})
+  add_executable(${t} ${t}.c)
+  
+  target_link_libraries(${t} 
+    PRIVATE 
+    ${PROJECT_NAME}::${PROJECT_NAME}
+  )
+
+  # Register with CTest so you can run `make test` or `ctest` later
+  add_test(NAME ${t} COMMAND ${t})
+endforeach()
+
+
+if (USE_CUDA)
+  set(CUDA_TESTS
+    allocator_test
+    fuzzy-test-gpu
+    fuzzy-test-gpu-julian-impl
+    test-cuda-julian-impl
+    benchmark_all
+  )
+
+  foreach(t ${CUDA_TESTS})
+    cuda_memory_test(${t})
+  endforeach()
+endif()
+
+
 
 # copy data file
 file(GLOB txtfiles *.txt)
