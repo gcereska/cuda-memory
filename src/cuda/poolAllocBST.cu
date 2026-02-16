@@ -1,3 +1,6 @@
+//#ifndef POOLALLOCBST_CU
+//#define POOLALLOCBST_CU
+
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -8,13 +11,17 @@
 #include "RBTree.cuh"
 #include "poolAllocBST.cuh"
 
-
+namespace pmalloc_bst {
 
 // #define GPU_MEM_POOL_SIZE 49152
 
 #define MEM_MAX_THREADS 128
 
-
+// typedef struct {
+//     unsigned char* memBuffer;
+//     RBTreeBlockHeader *freeList;
+//     RBTreeBlockHeader *fullList;
+// } MemBufferStorage;
 
 __device__ MemBufferStorage memPools[MEM_MAX_THREADS];
 
@@ -433,3 +440,7 @@ __device__ void cfree(void* addressForDeletion){
 
     // sort_free_list(threadIndex);
 }
+
+} // namespace pmalloc_bst
+
+//#endif
