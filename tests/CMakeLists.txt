@@ -35,15 +35,11 @@ endforeach()
 
 
 if (USE_CUDA)
-  set(CUDA_TESTS
-    allocator_test
-    fuzzy-test-gpu
-    fuzzy-test-gpu-julian-impl
-    test-cuda-julian-impl
-    benchmark_all
-  )
+  file(GLOB CUDA_TESTS "*.cu")
 
-  foreach(t ${CUDA_TESTS})
+
+  foreach(test ${CUDA_TESTS})
+    get_filename_component(t ${test} NAME_WE)
     cuda_memory_test(${t})
   endforeach()
 endif()
