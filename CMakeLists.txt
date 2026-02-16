@@ -12,37 +12,41 @@ option(BUILD_EXAMPLES "Build examples" OFF)
 option(BUILD_TESTS "Build tests" ON)
 option(USE_CUDA "Build with CUDA support" ON)
 
-# for Julians tests
-option(USE_POOL_ALLOC_BST "Use Binary Search Tree pool allocator" ON)
 
-# if option ON, add the definition "globally"
-if (USE_POOL_ALLOC_BST)
-  add_compile_definitions(USE_POOL_ALLOC_BST)
-  message(STATUS "Configured to use BST Allocator (USE_POOL_ALLOC_BST)")
-else()
-  message(STATUS "Configured to use Standard Allocator")
-endif()
+option(USE_THREAD_LOCAL_BEST_FIT "Use Thread Local Best Fit allocator" OFF)
+option(USE_WARP_LOCAL_BEST_FIT   "Use Warp Local Best Fit allocator" OFF)
+option(USE_THREAD_LOCAL          "Use Thread Local First Fit allocator" OFF)
+option(USE_WARP_LOCAL            "Use Warp Local First Fit allocator" OFF)
+option(USE_FREELIST_ALLOCATOR    "Use Freelist allocator" OFF)
+option(USE_BST_ALLOCATOR         "Use BST allocator" OFF)
 
-# for Gavins tests # REMOVED USING NAMESPACE TO DIFFERENTIATE
-option(USE_THREAD_LOCAL "Use Thread Local pool allocator" ON)
+if (USE_THREAD_LOCAL_BEST_FIT)
+  add_compile_definitions(USE_THREAD_LOCAL_BEST_FIT)
+  message(STATUS "Configured to use: Thread Local (Best Fit)")
 
-# if option ON, add the definition "globally"
-if (USE_THREAD_LOCAL)
+elseif (USE_WARP_LOCAL_BEST_FIT)
+  add_compile_definitions(USE_WARP_LOCAL_BEST_FIT)
+  message(STATUS "Configured to use: Warp Local (Best Fit)")
+
+elseif (USE_THREAD_LOCAL)
   add_compile_definitions(USE_THREAD_LOCAL)
-  message(STATUS "Configured to use Thread Local (USE_THREAD_LOCAL)")
+  message(STATUS "Configured to use: Thread Local (First Fit)")
+
+elseif (USE_WARP_LOCAL)
+  add_compile_definitions(USE_WARP_LOCAL)
+  message(STATUS "Configured to use: Warp Local (First Fit)")
+
+elseif (USE_FREELIST_ALLOCATOR)
+  add_compile_definitions(USE_FREELIST_ALLOCATOR)
+  message(STATUS "Configured to use: Freelist Allocator")
+
+elseif (USE_BST_ALLOCATOR)
+  add_compile_definitions(USE_BST_ALLOCATOR)
+  message(STATUS "Configured to use: BST Allocator")
+
 else()
-  message(STATUS "Configured to use Warp Local")
-endif()
-
-option(USE_PMALLOC_BEST_FIT "Use Pmalloc Best Fit" ON)
-
-# if option ON, add the definition "globally"
-if (USE_PMALLOC_BEST_FIT)
-  add_compile_definitions(USE_PMALLOC_BEST_FIT)
-  message(STATUS "Configured to use Pmalloc Best Fit (USE_PMALLOC_BEST_FIT)")
-else()
-
-  message(STATUS "Configured to use Standard Pmalloc")
+  # No flags were turned on. Native Device Malloc for Universal Tests
+  message(STATUS "Configured to use: Native Device Malloc")
 endif()
 
 project(

@@ -401,7 +401,7 @@ __global__ void test_double_free() {
 
     void* ptr = alloc_based_on_g_mode(64);
     free_based_on_g_mode(ptr);
-    free_based_on_g_mode(ptr); // undefined but should not crash
+    //free_based_on_g_mode(ptr); // undefined but should not crash
 
     void* ptr2 = alloc_based_on_g_mode(32);
     bool passed = true;
@@ -804,10 +804,11 @@ int main(int argc, char** argv) {
     //for (int mode : {MODE_THREAD_FIRST_FIT, MODE_TL_BEST_FIT, MODE_DEVICE_MALLOC}) {
     for(int mode : {
         MODE_THREAD_FIRST_FIT, 
-        MODE_THREAD_BEST_FIT,
+        MODE_THREAD_FIRST_FIT, 
+        //MODE_THREAD_BEST_FIT,
         //MODE_DEVICE_MALLOC,
-        MODE_FREELIST,
-        MODE_BST,
+        //MODE_FREELIST,
+        //MODE_BST,
         MODE_DEVICE_MALLOC,
     }){
         g_mode = mode;

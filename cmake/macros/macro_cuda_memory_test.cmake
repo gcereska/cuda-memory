@@ -15,6 +15,10 @@ macro(cuda_memory_test namel)
     PROPERTIES CUDA_SEPARABLE_COMPILATION ON
   )
 
+  target_compile_options(${namel} PRIVATE 
+    $<$<COMPILE_LANGUAGE:CUDA>:-diag-suppress=177,550,127>
+  )
+
   target_include_directories(${namel}
     PRIVATE ${CMAKE_BINARY_DIR}
             ${${projectu}_INCLUDE_DIR}

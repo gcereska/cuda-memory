@@ -7,7 +7,7 @@
 #include "poolAlloc.cuh"
 #include "poolAllocBST.cuh"
 
-#if defined(USE_POOL_ALLOC_BST)
+#if defined(USE_BST_ALLOCATOR)
     namespace pool = pmalloc_bst;
 #else
     namespace pool = pmalloc_freelist;
