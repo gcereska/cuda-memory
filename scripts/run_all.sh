@@ -3,6 +3,7 @@
 # 1. Add the names of the test executables you want to run
 TARGETS=(
   "blueprint"
+  "fuzzy-test-gpu"
 )
 
 # 2. The list of build directories we generated in the compile script
