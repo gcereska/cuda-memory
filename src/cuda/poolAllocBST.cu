@@ -294,11 +294,13 @@ __device__ void init_gpu_buffer(unsigned int incomingMemSize){
 
 
     uint threadPoolSize = get_thread_pool_size();
-
+    int threadPoolOffset = threadPoolSize % 8;
+    threadPoolSize -= (8 - threadPoolOffset);
     //printf("thread pool size: %d\n",threadPoolSize);
+    int remainder = (long int)(smem + (threadPoolSize * threadIndex)) % 8;
+    
 
-
-    memPools[threadIndex].memBuffer = smem + (threadPoolSize * threadIndex);
+    memPools[threadIndex].memBuffer = smem + (threadPoolSize * threadIndex) + (8 - remainder);
 
     // printf("thread index %d's memory pool pointer: %p\n",threadIndex,memPools[threadIndex].memBuffer);
 
@@ -334,9 +336,16 @@ __device__ void* cmalloc(unsigned long size){
     uint threadIndex = get_linear_thread_index();
 
     if(&memPools[threadIndex].freeList == NULL || get_node_size(memPools[threadIndex].freeList) < (size + (int16_t)sizeof(RBTreeBlockHeader) + (int16_t)sizeof(BlockFooter))){
-        printf("malloc eval null exit\n");
+        // if(threadIndex == 0){
+        //     printf("malloc eval null exit\n");
+
+        // }
         return NULL;
     }
+
+    // if(threadIndex == 0){
+    //     printf("not failing?\n");
+    // }
 
     uint16_t preAllocationSize = get_node_size(memPools[threadIndex].freeList);
     RBTreeBlockHeader* newlyAllocatedHeader = memPools[threadIndex].freeList;
