@@ -16,7 +16,7 @@
 
 #elif defined(USE_WARP_LOCAL_BEST_FIT)
     #define ALLOCATOR_NAME "Warp Local (Best Fit)"
-    #define pool_init(size) warp_pool::pool_init(size) 
+    #define pool_init(size) warp_pool::pool_init(__VA_ARGS__) 
     #define pmalloc(size)   warp_pool::pmalloc_best_fit(size)
     #define pfree(ptr)      warp_pool::pfree(ptr)
 
@@ -28,7 +28,7 @@
 
 #elif defined(USE_WARP_LOCAL)
     #define ALLOCATOR_NAME "Warp Local (First Fit)"
-    #define pool_init(size) warp_pool::pool_init(size)
+    #define pool_init(size) warp_pool::pool_init(__VA_ARGS__)
     #define pmalloc(size)   warp_pool::pmalloc(size)
     #define pfree(ptr)      warp_pool::pfree(ptr)
 
