@@ -53,23 +53,25 @@
 
 __global__ void simple_test_kernel(size_t pool_size) {
 
-    printf("Kernel Entered\n");
+    
+
+    if (threadIdx.x == 11) printf("Kernel Entered\n");
 
     pool_init(pool_size);
 
-    printf("pool_init success\n");
+    if (threadIdx.x == 11) printf("pool_init success\n");
 
     void* ptr = pmalloc(64);
 
-    printf("pmalloc success\n");
+    if (threadIdx.x == 11) printf("pmalloc success\n");
 
     if (ptr != nullptr) {
-        printf("Thread %d: allocated 64 bytes at %p\n", threadIdx.x, ptr);
+        if (threadIdx.x == 11) printf("Thread %d: allocated 64 bytes at %p\n", threadIdx.x, ptr);
         pfree(ptr);
-        printf("pfree success\n");
-        printf("Thread %d: freed memory\n", threadIdx.x);
+        if (threadIdx.x == 11) printf("pfree success\n");
+        if (threadIdx.x == 11) printf("Thread %d: freed memory\n", threadIdx.x);
     } else {
-        printf("Thread %d: allocation failed\n", threadIdx.x);
+        if (threadIdx.x == 11) printf("Thread %d: allocation failed\n", threadIdx.x);
     }
 }
 
