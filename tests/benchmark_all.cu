@@ -828,7 +828,6 @@ int main(int argc, char** argv) {
         MODE_THREAD_BEST_FIT,
         MODE_WARP_FIRST_FIT,
         MODE_WARP_BEST_FIT,
-        MODE_DEVICE_MALLOC,
         MODE_FREELIST,
         MODE_BST,
     }){
