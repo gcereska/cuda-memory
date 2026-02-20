@@ -59,3 +59,23 @@ pip install torch
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu130
 pip install torch==2.9.1 torchvision==0.24.1 torchaudio==2.9.1 --index-url https://download.pytorch.org/whl/cu130
 
+
+// RUN SCRIPTS
+bash scripts/build_all.sh && bash scripts/run_all.sh > output.txt
+
+//MAKE SPECIFIC BUILDS
+cmake -B build -DUSE_THREAD_LOCAL_BEST_FIT
+cmake -B build -DUSE_WARP_LOCAL_BEST_FIT
+cmake -B build -DUSE_THREAD_LOCAL
+cmake -B build -DUSE_WARP_LOCAL
+cmake -B build -DUSE_FREELIST_ALLOCATOR
+cmake -B build -DUSE_BST_ALLOCATOR
+
+// WARP LOCAL MULTIPLE THREADS PER POOL 
+// CAPPED TO 32 POOLS
+warp_pool::pool_init(bytes)        // 1 thread per pool
+warp_pool::pool_init(bytes, 4)     // 4 threads per pool
+
+--------   AFTER MACRO   -----------
+           pmalloc(bytes)        // 1 thread per pool
+           pmalloc(bytes, 4)     // 4 threads per pool

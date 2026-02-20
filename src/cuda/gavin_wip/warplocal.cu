@@ -8,7 +8,7 @@
 namespace warp_pool {
 
 static constexpr int WARP_SIZE = 32;
-static constexpr int MAX_WARPS = 32; 
+static constexpr int MAX_POOLS = 32;
 static constexpr size_t ALIGNMENT = 8; 
 static constexpr uint16_t DEFAULT_OFFSET = 0xFFFF;
 static constexpr size_t HEADER_SIZE = sizeof(uint64_t); 
@@ -40,10 +40,10 @@ struct pool_managers {
     int          threads_per_pool;           // 
     int          num_pools;
     int          shared_memory_size;         // in bytes
-    int          spinlocks[MAX_WARPS];       // Spinlocks 
-    BlockHeader* free_heads[MAX_WARPS];      // Free list heads 
-    std::byte*   pool_starts[MAX_WARPS];     // bound checking  
-    std::byte*   pool_ends[MAX_WARPS];         
+    int          spinlocks[MAX_POOLS];       // Spinlocks 
+    BlockHeader* free_heads[MAX_POOLS];      // Free list heads 
+    std::byte*   pool_starts[MAX_POOLS];     // bound checking  
+    std::byte*   pool_ends[MAX_POOLS];         
 };
 
 
@@ -125,8 +125,6 @@ __device__ inline bool in_pool(void* user_ptr, std::byte* pool_start){
 
 }
 */
-
-
 
 __device__ inline void free_list_insert(BlockHeader** free_heads, BlockHeader* h_ptr, std::byte* pool_start) {
 
@@ -266,10 +264,6 @@ __device__ __forceinline__ std::byte* get_shared_heap_base() {
 
 // spinlock related helpers
 
-__device__ __forceinline__ int get_pool_id_from_warp_size() {
-    return threadIdx.x / WARP_SIZE;
-}
-
 __device__ __forceinline__ int get_pool_id() {
     std::byte* shared_mem_ptr = get_shared_heap_base();
     pool_managers* pool_manager = reinterpret_cast<pool_managers*>(shared_mem_ptr);
@@ -304,14 +298,17 @@ __device__ void pool_init(std::size_t total_bytes, int threads_per_pool =  1) {
     
 
     int num_pools = (blockDim.x + threads_per_pool - 1) / threads_per_pool;
-    if (num_pools > MAX_WARPS) num_pools = MAX_WARPS;
+    if (num_pools > MAX_POOLS) {
+        threads_per_pool = (blockDim.x + MAX_POOLS - 1) / MAX_POOLS;
+        num_pools = (blockDim.x + threads_per_pool - 1) / threads_per_pool;
+    }
 
     // Calculate common constraints (all threads in warp need this info)
     //bytes per warp aka bytes per pool
     size_t bytes_per_warp = 0;
     if (total_bytes > manager_struct_size) {
         size_t remaining_bytes = total_bytes - manager_struct_size;
-        bytes_per_warp = remaining_bytes / MAX_WARPS;
+        bytes_per_warp = remaining_bytes / num_pools;
         bytes_per_warp = bytes_per_warp & ~(ALIGNMENT - 1);
         if (bytes_per_warp > 0xFFFF) bytes_per_warp = 0xFFFF;
     }
@@ -325,7 +322,7 @@ __device__ void pool_init(std::size_t total_bytes, int threads_per_pool =  1) {
     }
 
     // 2. First Warp (Threads 0-31): Initialize Pools in Parallel
-    if (threadIdx.x < 32) {
+    if (threadIdx.x < num_pools) {
         int i = threadIdx.x;
         
         pool_manager->spinlocks[i] = 0;
@@ -365,7 +362,7 @@ __device__ void pool_init(std::size_t total_bytes, int threads_per_pool =  1) {
 __device__ void* pmalloc(std::size_t size) {
     int pool_id = get_pool_id();
     
-    if (pool_id >= MAX_WARPS) return nullptr;
+    if (pool_id >= MAX_POOLS) return nullptr;
 
     std::byte* shared_mem_ptr = get_shared_heap_base();
     pool_managers* pool_manager = reinterpret_cast<pool_managers*>(shared_mem_ptr);
@@ -402,7 +399,7 @@ __device__ void* pmalloc(std::size_t size) {
 __device__ void* pmalloc_best_fit(std::size_t size) {
     int pool_id = get_pool_id();
     
-    if (pool_id >= MAX_WARPS) return nullptr;
+    if (pool_id >= MAX_POOLS) return nullptr;
 
     std::byte* shared_mem_ptr = get_shared_heap_base();
     pool_managers* pool_manager = reinterpret_cast<pool_managers*>(shared_mem_ptr);
@@ -454,7 +451,7 @@ __device__ void pfree(void* ptr) {
     
     int pool_id = get_pool_id();
     
-    if (pool_id >= MAX_WARPS) return;
+    if (pool_id >= MAX_POOLS) return;
 
     std::byte* shared_mem_ptr = get_shared_heap_base();
     pool_managers* pool_manager = reinterpret_cast<pool_managers*>(shared_mem_ptr);
