@@ -13,6 +13,13 @@ option(BUILD_TESTS "Build tests" ON)
 option(USE_CUDA "Build with CUDA support" ON)
 
 
+project(
+  cuda_memory
+  LANGUAGES CXX C
+  DESCRIPTION "Memory Pool Allocator for C/C++ and CUDA"
+)
+
+
 option(USE_THREAD_LOCAL_BEST_FIT "Use Thread Local Best Fit allocator" OFF)
 option(USE_WARP_LOCAL_BEST_FIT   "Use Warp Local Best Fit allocator" OFF)
 option(USE_THREAD_LOCAL          "Use Thread Local First Fit allocator" OFF)
@@ -48,12 +55,6 @@ else()
   # No flags were turned on. Native Device Malloc for Universal Tests
   message(STATUS "Configured to use: Native Device Malloc")
 endif()
-
-project(
-  cuda_memory
-  LANGUAGES CXX C
-  DESCRIPTION "Memory Pool Allocator for C/C++ and CUDA"
-)
 
 
 

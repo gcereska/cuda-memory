@@ -53,23 +53,23 @@
 
 __global__ void simple_test_kernel(size_t pool_size) {
 
-
     printf("Kernel Entered\n");
 
     pool_init(pool_size);
-    printf("Pool init success\n");
+
+    printf("pool_init success\n");
 
     void* ptr = pmalloc(64);
-    printf("Malloc Success\n");
+
+    printf("pmalloc success\n");
 
     if (ptr != nullptr) {
         printf("Thread %d: allocated 64 bytes at %p\n", threadIdx.x, ptr);
         pfree(ptr);
+        printf("pfree success\n");
         printf("Thread %d: freed memory\n", threadIdx.x);
-
     } else {
         printf("Thread %d: allocation failed\n", threadIdx.x);
-
     }
 }
 
@@ -94,7 +94,7 @@ int main() {
     if (err != cudaSuccess) {
         printf("Runtime error: %s\n", cudaGetErrorString(err));
     }
-        
+    
     printf("\nDone\n");
     
     return 0;

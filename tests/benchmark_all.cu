@@ -36,12 +36,12 @@
 // ===================== MODES =====================
 enum Allocator_Modes_enum : int { 
     MODE_THREAD_FIRST_FIT=0,  // thread local 
-    MODE_THREAD_BEST_FIT=1,   // thread local best fit
-    MODE_FREELIST=2,      // julian freelist
-    MODE_BST=3,           // julian BST
-    MODE_DEVICE_MALLOC=4 // native cuda
-    // MODE_WARP_FIRST_FIT = 5,  // future
-    // MODE_WARP_BEST_FIT  = 6,  // future
+    MODE_THREAD_BEST_FIT =1,   // thread local best fit
+    MODE_FREELIST        =2,      // julian freelist
+    MODE_BST             =3,           // julian BST
+    MODE_DEVICE_MALLOC   =4, // native cuda
+    MODE_WARP_FIRST_FIT  =5,  
+    MODE_WARP_BEST_FIT   =6,  
 };
 
 // Managed globals on unified memory so kernels can stay the same signature 
@@ -62,9 +62,9 @@ __device__ __forceinline__ void init_based_on_g_mode() {
         case MODE_BST:
             pmalloc_bst::init_gpu_buffer(g_dyn_smem_bytes);
             break;
-        // case MODE_WARP_FIRST_FIT:
-        //     warp_pool::pool_init(g_dyn_smem_bytes, g_threads_per_pool);
-        //     break;
+        case MODE_WARP_FIRST_FIT:
+            //warp_pool::pool_init(g_dyn_smem_bytes, g_threads_per_pool);
+            break;
         case MODE_DEVICE_MALLOC:
         default:
             break;
@@ -807,8 +807,8 @@ int main(int argc, char** argv) {
         MODE_THREAD_FIRST_FIT, 
         //MODE_THREAD_BEST_FIT,
         //MODE_DEVICE_MALLOC,
-        //MODE_FREELIST,
-        //MODE_BST,
+        MODE_FREELIST,
+        MODE_BST,
         MODE_DEVICE_MALLOC,
     }){
         g_mode = mode;

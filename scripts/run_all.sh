@@ -3,7 +3,6 @@
 # 1. Add the names of the test executables you want to run
 TARGETS=(
   "blueprint"
-  # "fuzzy-test-gpu"
   "benchmark_all"
 )
 
