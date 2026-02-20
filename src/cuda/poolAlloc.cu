@@ -347,11 +347,13 @@ __device__ void init_gpu_buffer(uint incomingMemSize){
 
    
     uint threadPoolSize = get_thread_pool_size();
+    int threadPoolOffset = threadPoolSize % 8;
+    threadPoolSize -= (8 - threadPoolOffset);
+    //printf("thread pool size: %d\n",threadPoolSize);
+    int remainder = (long int)(smem + (threadPoolSize * threadIndex)) % 8;
+    
 
-    // printf("thread pool size: %d\n",threadPoolSize);
-
-
-    memPools[threadIndex].memBuffer = smem + (threadPoolSize * threadIndex);
+    memPools[threadIndex].memBuffer = smem + (threadPoolSize * threadIndex) + (8 - remainder);
 
     // printf("thread index %d's memory pool pointer: %p\n",threadIndex,memPools[threadIndex].memBuffer);
 

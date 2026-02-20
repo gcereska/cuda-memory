@@ -524,9 +524,13 @@ __global__ void test_thread_isolation() {
     init_based_on_g_mode();
 
     int* my_data = static_cast<int*>(alloc_based_on_g_mode(sizeof(int) * 4));
+    // printf("pointer address %p\n",my_data);
+
     if (my_data) for (int i = 0; i < 4; i++) my_data[i] = threadIdx.x * 1000 + i;
+    
 
     __syncthreads();
+    
 
     bool passed = true;
     if (my_data) {
@@ -537,7 +541,6 @@ __global__ void test_thread_isolation() {
     } else passed = false;
 
      //
-
     __syncthreads();
 
     __shared__ int fail_count;
@@ -704,25 +707,81 @@ float time_allocator_suite_once(size_t dynBytes) {
     CUDA_CHECK(cudaEventRecord(s));
 
     test_init<<<1, NUM_THREADS, dynBytes>>>();
+    // printf("test init success\n");
+    CUDA_CHECK(cudaEventRecord(e));
+    CUDA_CHECK(cudaEventSynchronize(e));
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
+
     test_single_alloc_free<<<1, NUM_THREADS, dynBytes>>>();
+    CUDA_CHECK(cudaEventRecord(e));
+    CUDA_CHECK(cudaEventSynchronize(e));
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
     test_multiple_allocs<<<1, NUM_THREADS, dynBytes>>>();
+    CUDA_CHECK(cudaEventRecord(e));
+    CUDA_CHECK(cudaEventSynchronize(e));
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
     test_coalescing<<<1, NUM_THREADS, dynBytes>>>();
+    CUDA_CHECK(cudaEventRecord(e));
+    CUDA_CHECK(cudaEventSynchronize(e));
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
     test_coalescing_orders<<<1, NUM_THREADS, dynBytes>>>();
+    // printf("test coalescing orders success\n");
+
+    CUDA_CHECK(cudaEventRecord(e));
+    CUDA_CHECK(cudaEventSynchronize(e));
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
+
     test_splitting<<<1, NUM_THREADS, dynBytes>>>();
     test_size_boundaries<<<1, NUM_THREADS, dynBytes>>>();
     test_exhaustion<<<1, NUM_THREADS, dynBytes>>>();
     test_fragmentation<<<1, NUM_THREADS, dynBytes>>>();
+    // printf("test fragmentation success\n");
+    CUDA_CHECK(cudaEventRecord(e));
+    CUDA_CHECK(cudaEventSynchronize(e));
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
+
     test_free_list_order<<<1, NUM_THREADS, dynBytes>>>();
     test_null_free<<<1, NUM_THREADS, dynBytes>>>();
     test_double_free<<<1, NUM_THREADS, dynBytes>>>();
     test_max_allocation<<<1, NUM_THREADS, dynBytes>>>();
     test_alignment<<<1, NUM_THREADS, dynBytes>>>();
+    // printf("test alignment success\n");
+
+    CUDA_CHECK(cudaEventRecord(e));
+    CUDA_CHECK(cudaEventSynchronize(e));
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
+
     test_interleaved<<<1, NUM_THREADS, dynBytes>>>();
+    CUDA_CHECK(cudaEventRecord(e));
+    CUDA_CHECK(cudaEventSynchronize(e));
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
     test_zero_alloc<<<1, NUM_THREADS, dynBytes>>>();
+    CUDA_CHECK(cudaEventRecord(e));
+    CUDA_CHECK(cudaEventSynchronize(e));
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
     test_thread_isolation<<<1, NUM_THREADS, dynBytes>>>();
+    CUDA_CHECK(cudaEventRecord(e));
+    CUDA_CHECK(cudaEventSynchronize(e));
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
     test_repeated_cycles<<<1, NUM_THREADS, dynBytes>>>();
+    CUDA_CHECK(cudaEventRecord(e));
+    CUDA_CHECK(cudaEventSynchronize(e));
+    CUDA_CHECK(cudaGetLastError());
+    CUDA_CHECK(cudaDeviceSynchronize());
     test_mixed_sizes<<<1, NUM_THREADS, dynBytes>>>();
     //test_best_fit<<<1, NUM_THREADS, dynBytes>>>();
+
+    
 
     CUDA_CHECK(cudaEventRecord(e));
     CUDA_CHECK(cudaEventSynchronize(e));
@@ -804,11 +863,10 @@ int main(int argc, char** argv) {
     //for (int mode : {MODE_THREAD_FIRST_FIT, MODE_TL_BEST_FIT, MODE_DEVICE_MALLOC}) {
     for(int mode : {
         MODE_THREAD_FIRST_FIT, 
-        MODE_THREAD_FIRST_FIT, 
-        //MODE_THREAD_BEST_FIT,
-        //MODE_DEVICE_MALLOC,
-        MODE_FREELIST,
+        // MODE_THREAD_FIRST_FIT, 
+        MODE_THREAD_BEST_FIT,
         MODE_BST,
+        MODE_FREELIST,
         MODE_DEVICE_MALLOC,
     }){
         g_mode = mode;
