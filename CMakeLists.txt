@@ -170,7 +170,7 @@ if (USE_CUDA)
   if (CMAKE_CUDA_COMPILER)
     find_package(CUDAToolkit QUIET)
     if (CUDAToolkit_FOUND)
-      set(CMAKE_CUDA_ARCHITECTURES "86;89")
+      set(CMAKE_CUDA_ARCHITECTURES 75 80 86 89)
       set(CMAKE_CUDA_STANDARD 17)
     else()
       set(USE_CUDA OFF) # no toolkit CPU-only

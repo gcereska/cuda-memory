@@ -1,3 +1,5 @@
+#!/bin/bash
+
 FLAGS=(
   "USE_THREAD_LOCAL_BEST_FIT"
   "USE_WARP_LOCAL_BEST_FIT"

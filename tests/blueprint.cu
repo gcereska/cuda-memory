@@ -53,15 +53,23 @@
 
 __global__ void simple_test_kernel(size_t pool_size) {
 
+
+    printf("Kernel Entered\n");
+
     pool_init(pool_size);
+    printf("Pool init success\n");
+
     void* ptr = pmalloc(64);
+    printf("Malloc Success\n");
 
     if (ptr != nullptr) {
         printf("Thread %d: allocated 64 bytes at %p\n", threadIdx.x, ptr);
         pfree(ptr);
         printf("Thread %d: freed memory\n", threadIdx.x);
+
     } else {
         printf("Thread %d: allocation failed\n", threadIdx.x);
+
     }
 }
 
@@ -77,8 +85,16 @@ int main() {
     
     simple_test_kernel<<<1, 32, dyn_smem>>>(dyn_smem);
     
-    cudaDeviceSynchronize();
-    
+    cudaError_t launchErr = cudaGetLastError();
+    if (launchErr != cudaSuccess) {
+        printf("Launch error: %s\n", cudaGetErrorString(launchErr));
+    }
+
+    cudaError_t err = cudaDeviceSynchronize();
+    if (err != cudaSuccess) {
+        printf("Runtime error: %s\n", cudaGetErrorString(err));
+    }
+        
     printf("\nDone\n");
     
     return 0;
