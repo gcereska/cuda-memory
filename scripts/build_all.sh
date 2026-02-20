@@ -1,3 +1,5 @@
+#!/bin/bash
+
 FLAGS=(
   "USE_THREAD_LOCAL_BEST_FIT"
   "USE_WARP_LOCAL_BEST_FIT"
@@ -19,10 +21,12 @@ for FLAG in "${FLAGS[@]}"; do
   # 2. Configure and Build
   if [ "$FLAG" == "NONE" ]; then
     BUILD_DIR="build_native"
+    rm -rf ${BUILD_DIR}
     cmake -S . -B ${BUILD_DIR}
     cmake --build ${BUILD_DIR} -j
   else
     BUILD_DIR="build_${FLAG}"
+    rm -rf ${BUILD_DIR}
     cmake -S . -B ${BUILD_DIR} -D${FLAG}=ON
     cmake --build ${BUILD_DIR} -j
     # Save the executable with the flag name
