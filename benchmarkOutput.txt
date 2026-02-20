@@ -1,0 +1,212 @@
+Starting to run all tests
+
+#########################################################
+ RUNNING TEST SUITE: benchmark_all
+#########################################################
+---------------------------------------------------------
+ Executing: ./build_USE_THREAD_LOCAL_BEST_FIT/tests/benchmark_all
+---------------------------------------------------------
+============================================
+  benchmark_all.cu  (runtime switch, 3 modes)
+============================================
+Device: NVIDIA GeForce RTX 2070
+sharedMemPerBlock:       49152 bytes
+sharedMemPerBlockOptin:  65536 bytes
+
+allocator_test dyn smem: 49136 bytes
+fuzzy_test dyn smem:     32768 bytes
+BENCH_VERBOSE:           0 (0 recommended)
+
+-------------------------------------------------
+MODE: thread_pool (first-fit)
+allocator_test suite: total 493.068 ms, avg 0.493 ms/iter
+fuzzy_test kernel:    total 137.179 ms, avg 0.137 ms/iter
+-------------------------------------------------
+MODE: thread_pool (first-fit)
+allocator_test suite: total 518.619 ms, avg 0.519 ms/iter
+fuzzy_test kernel:    total 116.822 ms, avg 0.117 ms/iter
+-------------------------------------------------
+MODE: device malloc/free
+allocator_test suite: total 36334.164 ms, avg 36.334 ms/iter
+fuzzy_test kernel:    total 101838.883 ms, avg 101.839 ms/iter
+-------------------------------------------------
+Done.
+
+---------------------------------------------------------
+ Executing: ./build_USE_WARP_LOCAL_BEST_FIT/tests/benchmark_all
+---------------------------------------------------------
+============================================
+  benchmark_all.cu  (runtime switch, 3 modes)
+============================================
+Device: NVIDIA GeForce RTX 2070
+sharedMemPerBlock:       49152 bytes
+sharedMemPerBlockOptin:  65536 bytes
+
+allocator_test dyn smem: 49136 bytes
+fuzzy_test dyn smem:     32768 bytes
+BENCH_VERBOSE:           0 (0 recommended)
+
+-------------------------------------------------
+MODE: thread_pool (first-fit)
+allocator_test suite: total 436.507 ms, avg 0.437 ms/iter
+fuzzy_test kernel:    total 127.726 ms, avg 0.128 ms/iter
+-------------------------------------------------
+MODE: thread_pool (first-fit)
+allocator_test suite: total 433.367 ms, avg 0.433 ms/iter
+fuzzy_test kernel:    total 129.164 ms, avg 0.129 ms/iter
+-------------------------------------------------
+MODE: device malloc/free
+allocator_test suite: total 32954.359 ms, avg 32.954 ms/iter
+fuzzy_test kernel:    total 105041.539 ms, avg 105.042 ms/iter
+-------------------------------------------------
+Done.
+
+---------------------------------------------------------
+ Executing: ./build_USE_THREAD_LOCAL/tests/benchmark_all
+---------------------------------------------------------
+============================================
+  benchmark_all.cu  (runtime switch, 3 modes)
+============================================
+Device: NVIDIA GeForce RTX 2070
+sharedMemPerBlock:       49152 bytes
+sharedMemPerBlockOptin:  65536 bytes
+
+allocator_test dyn smem: 49136 bytes
+fuzzy_test dyn smem:     32768 bytes
+BENCH_VERBOSE:           0 (0 recommended)
+
+-------------------------------------------------
+MODE: thread_pool (first-fit)
+allocator_test suite: total 478.125 ms, avg 0.478 ms/iter
+fuzzy_test kernel:    total 118.956 ms, avg 0.119 ms/iter
+-------------------------------------------------
+MODE: thread_pool (first-fit)
+allocator_test suite: total 443.088 ms, avg 0.443 ms/iter
+fuzzy_test kernel:    total 119.380 ms, avg 0.119 ms/iter
+-------------------------------------------------
+MODE: device malloc/free
+allocator_test suite: total 32743.914 ms, avg 32.744 ms/iter
+fuzzy_test kernel:    total 102293.141 ms, avg 102.293 ms/iter
+-------------------------------------------------
+Done.
+
+---------------------------------------------------------
+ Executing: ./build_USE_WARP_LOCAL/tests/benchmark_all
+---------------------------------------------------------
+============================================
+  benchmark_all.cu  (runtime switch, 3 modes)
+============================================
+Device: NVIDIA GeForce RTX 2070
+sharedMemPerBlock:       49152 bytes
+sharedMemPerBlockOptin:  65536 bytes
+
+allocator_test dyn smem: 49136 bytes
+fuzzy_test dyn smem:     32768 bytes
+BENCH_VERBOSE:           0 (0 recommended)
+
+-------------------------------------------------
+MODE: thread_pool (first-fit)
+allocator_test suite: total 510.629 ms, avg 0.511 ms/iter
+fuzzy_test kernel:    total 134.591 ms, avg 0.135 ms/iter
+-------------------------------------------------
+MODE: thread_pool (first-fit)
+allocator_test suite: total 430.516 ms, avg 0.431 ms/iter
+fuzzy_test kernel:    total 126.862 ms, avg 0.127 ms/iter
+-------------------------------------------------
+MODE: device malloc/free
+allocator_test suite: total 32469.301 ms, avg 32.469 ms/iter
+fuzzy_test kernel:    total 95209.328 ms, avg 95.209 ms/iter
+-------------------------------------------------
+Done.
+
+---------------------------------------------------------
+ Executing: ./build_USE_FREELIST_ALLOCATOR/tests/benchmark_all
+---------------------------------------------------------
+============================================
+  benchmark_all.cu  (runtime switch, 3 modes)
+============================================
+Device: NVIDIA GeForce RTX 2070
+sharedMemPerBlock:       49152 bytes
+sharedMemPerBlockOptin:  65536 bytes
+
+allocator_test dyn smem: 49136 bytes
+fuzzy_test dyn smem:     32768 bytes
+BENCH_VERBOSE:           0 (0 recommended)
+
+-------------------------------------------------
+MODE: thread_pool (first-fit)
+allocator_test suite: total 428.751 ms, avg 0.429 ms/iter
+fuzzy_test kernel:    total 121.664 ms, avg 0.122 ms/iter
+-------------------------------------------------
+MODE: thread_pool (first-fit)
+allocator_test suite: total 445.429 ms, avg 0.445 ms/iter
+fuzzy_test kernel:    total 129.629 ms, avg 0.130 ms/iter
+-------------------------------------------------
+MODE: device malloc/free
+allocator_test suite: total 34522.785 ms, avg 34.523 ms/iter
+fuzzy_test kernel:    total 95370.852 ms, avg 95.371 ms/iter
+-------------------------------------------------
+Done.
+
+---------------------------------------------------------
+ Executing: ./build_USE_BST_ALLOCATOR/tests/benchmark_all
+---------------------------------------------------------
+============================================
+  benchmark_all.cu  (runtime switch, 3 modes)
+============================================
+Device: NVIDIA GeForce RTX 2070
+sharedMemPerBlock:       49152 bytes
+sharedMemPerBlockOptin:  65536 bytes
+
+allocator_test dyn smem: 49136 bytes
+fuzzy_test dyn smem:     32768 bytes
+BENCH_VERBOSE:           0 (0 recommended)
+
+-------------------------------------------------
+MODE: thread_pool (first-fit)
+allocator_test suite: total 448.557 ms, avg 0.449 ms/iter
+fuzzy_test kernel:    total 110.882 ms, avg 0.111 ms/iter
+-------------------------------------------------
+MODE: thread_pool (first-fit)
+allocator_test suite: total 467.424 ms, avg 0.467 ms/iter
+fuzzy_test kernel:    total 136.246 ms, avg 0.136 ms/iter
+-------------------------------------------------
+MODE: device malloc/free
+allocator_test suite: total 34743.031 ms, avg 34.743 ms/iter
+fuzzy_test kernel:    total 94498.969 ms, avg 94.499 ms/iter
+-------------------------------------------------
+Done.
+
+---------------------------------------------------------
+ Executing: ./build_native/tests/benchmark_all
+---------------------------------------------------------
+============================================
+  benchmark_all.cu  (runtime switch, 3 modes)
+============================================
+Device: NVIDIA GeForce RTX 2070
+sharedMemPerBlock:       49152 bytes
+sharedMemPerBlockOptin:  65536 bytes
+
+allocator_test dyn smem: 49136 bytes
+fuzzy_test dyn smem:     32768 bytes
+BENCH_VERBOSE:           0 (0 recommended)
+
+-------------------------------------------------
+MODE: thread_pool (first-fit)
+allocator_test suite: total 483.197 ms, avg 0.483 ms/iter
+fuzzy_test kernel:    total 115.523 ms, avg 0.116 ms/iter
+-------------------------------------------------
+MODE: thread_pool (first-fit)
+allocator_test suite: total 436.671 ms, avg 0.437 ms/iter
+fuzzy_test kernel:    total 127.105 ms, avg 0.127 ms/iter
+-------------------------------------------------
+MODE: device malloc/free
+allocator_test suite: total 33209.867 ms, avg 33.210 ms/iter
+fuzzy_test kernel:    total 96968.922 ms, avg 96.969 ms/iter
+-------------------------------------------------
+Done.
+
+
+
+[][][][][][][][]][[][][][][][][][][][[][][][][][][][][][][][][][][][][][][]]]
+All tests complete
