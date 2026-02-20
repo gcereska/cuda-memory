@@ -30,7 +30,11 @@ __device__ uint sharedMemSize;
 //------------------------------------------------------------------------------------CUDA HELPER FUNCTIONS--------------------------------------------------------------------------------------------
 
 __device__ uint get_thread_pool_size(){
-    return (sharedMemSize);
+    int total_threads =
+        gridDim.x * gridDim.y * gridDim.z *
+        blockDim.x * blockDim.y * blockDim.z;
+
+    return (sharedMemSize/total_threads);
 }
 
 __device__ uint get_linear_thread_index(){
@@ -289,12 +293,12 @@ __device__ void init_gpu_buffer(unsigned int incomingMemSize){
 
 
 
-    // uint threadPoolSize = get_thread_pool_size();
+    uint threadPoolSize = get_thread_pool_size();
 
-    printf("thread pool size: %d\n",incomingMemSize);
+    printf("thread pool size: %d\n",threadPoolSize);
 
 
-    memPools[threadIndex].memBuffer = smem + (incomingMemSize * threadIndex);
+    memPools[threadIndex].memBuffer = smem + (threadPoolSize * threadIndex);
 
     // printf("thread index %d's memory pool pointer: %p\n",threadIndex,memPools[threadIndex].memBuffer);
 
@@ -304,7 +308,7 @@ __device__ void init_gpu_buffer(unsigned int incomingMemSize){
     RBTreeBlockHeader *header = (RBTreeBlockHeader*)memPools[threadIndex].memBuffer;
 
 
-    int16_t tempSize = (incomingMemSize - (sizeof(RBTreeBlockHeader) + sizeof(BlockFooter)));
+    int16_t tempSize = (threadPoolSize - (sizeof(RBTreeBlockHeader) + sizeof(BlockFooter)));
     header->fullSize = tempSize & 0x7FFF;
     header->leftOffset = 0;
     header->rightOffset = 0;

@@ -24,7 +24,11 @@ __device__ uint sharedMemSize;
 //------------------------------------------------------------------------------------CUDA HELPER FUNCTIONS--------------------------------------------------------------------------------------------
 
 __device__ uint get_thread_pool_size(){
-    return (sharedMemSize);
+    int total_threads =
+        gridDim.x * gridDim.y * gridDim.z *
+        blockDim.x * blockDim.y * blockDim.z;
+
+    return (sharedMemSize/total_threads);
 }
 
 __device__ uint get_linear_thread_index(){
@@ -324,6 +328,10 @@ __device__ void init_gpu_buffer(uint incomingMemSize){
     uint threadIndex = get_linear_thread_index();
     // printf("linear thread index: %d\n",threadIndex);
     
+    if(threadIndex == 0){
+        sharedMemSize = incomingMemSize;
+    }
+    __syncthreads();
     
     /*
     
@@ -338,11 +346,12 @@ __device__ void init_gpu_buffer(uint incomingMemSize){
     */
 
    
+    uint threadPoolSize = get_thread_pool_size();
 
     // printf("thread pool size: %d\n",threadPoolSize);
 
 
-    memPools[threadIndex].memBuffer = smem + (incomingMemSize * threadIndex);
+    memPools[threadIndex].memBuffer = smem + (threadPoolSize * threadIndex);
 
     // printf("thread index %d's memory pool pointer: %p\n",threadIndex,memPools[threadIndex].memBuffer);
 
@@ -350,7 +359,7 @@ __device__ void init_gpu_buffer(uint incomingMemSize){
     // printf("mempool start pointer: %p\n", memPool.memBuffer);
 
     BlockHeader *header = (BlockHeader*)memPools[threadIndex].memBuffer;
-    header->fullSize = (incomingMemSize - (sizeof(BlockHeader) + sizeof(BlockFooter))) & 0x7FFF;
+    header->fullSize = (threadPoolSize - (sizeof(BlockHeader) + sizeof(BlockFooter))) & 0x7FFF;
     header->nextOffset = 0;
     header->prevOffset = 0;
 
