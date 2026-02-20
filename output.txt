@@ -12,7 +12,7 @@ Starting to run all tests
 Kernel Entered
 pool_init success
 pmalloc success
-Thread 11: allocated 64 bytes at 0x72708d002db8
+Thread 11: allocated 64 bytes at 0x752b35002db8
 pfree success
 Thread 11: freed memory
 
@@ -27,7 +27,7 @@ Done
 Kernel Entered
 pool_init success
 pmalloc success
-Thread 11: allocated 64 bytes at 0x78a02d002db8
+Thread 11: allocated 64 bytes at 0x7e2d01002e40
 pfree success
 Thread 11: freed memory
 
@@ -42,7 +42,7 @@ Done
 Kernel Entered
 pool_init success
 pmalloc success
-Thread 11: allocated 64 bytes at 0x77ba1d002db8
+Thread 11: allocated 64 bytes at 0x739af8002db8
 pfree success
 Thread 11: freed memory
 
@@ -57,7 +57,7 @@ Done
 Kernel Entered
 pool_init success
 pmalloc success
-Thread 11: allocated 64 bytes at 0x74e8e1002db8
+Thread 11: allocated 64 bytes at 0x74c139002e40
 pfree success
 Thread 11: freed memory
 
@@ -72,7 +72,7 @@ Done
 Kernel Entered
 pool_init success
 pmalloc success
-Thread 11: allocated 64 bytes at 0x7ebb55002c08
+Thread 11: allocated 64 bytes at 0x7148b1002c08
 pfree success
 Thread 11: freed memory
 
@@ -87,7 +87,7 @@ Done
 Kernel Entered
 pool_init success
 pmalloc success
-Thread 11: allocated 64 bytes at 0x7e099d002c08
+Thread 11: allocated 64 bytes at 0x70ff0d002c08
 pfree success
 Thread 11: freed memory
 
@@ -116,186 +116,3 @@ Done
 ---------------------------------------------------------
  Executing: ./build_USE_THREAD_LOCAL_BEST_FIT/tests/benchmark_all
 ---------------------------------------------------------
-============================================
-  benchmark_all.cu  (runtime switch, 3 modes)
-============================================
-Device: NVIDIA GeForce RTX 4090 Laptop GPU
-sharedMemPerBlock:       49152 bytes
-sharedMemPerBlockOptin:  101376 bytes
-
-allocator_test dyn smem: 49136 bytes
-fuzzy_test dyn smem:     32768 bytes
-BENCH_VERBOSE:           0 (0 recommended)
-
--------------------------------------------------
-MODE: thread_pool (first-fit)
-allocator_test suite: total 375.741 ms, avg 0.376 ms/iter
-fuzzy_test kernel:    total 99.882 ms, avg 0.100 ms/iter
--------------------------------------------------
-MODE: thread_pool (first-fit)
-allocator_test suite: total 323.205 ms, avg 0.323 ms/iter
-fuzzy_test kernel:    total 96.401 ms, avg 0.096 ms/iter
--------------------------------------------------
-MODE: julian (freelist)
-CUDA Error: misaligned address at /home/testing/projects/cuda_memory/tests/benchmark_all.cu:728
-
----------------------------------------------------------
- Executing: ./build_USE_WARP_LOCAL_BEST_FIT/tests/benchmark_all
----------------------------------------------------------
-============================================
-  benchmark_all.cu  (runtime switch, 3 modes)
-============================================
-Device: NVIDIA GeForce RTX 4090 Laptop GPU
-sharedMemPerBlock:       49152 bytes
-sharedMemPerBlockOptin:  101376 bytes
-
-allocator_test dyn smem: 49136 bytes
-fuzzy_test dyn smem:     32768 bytes
-BENCH_VERBOSE:           0 (0 recommended)
-
--------------------------------------------------
-MODE: thread_pool (first-fit)
-allocator_test suite: total 310.759 ms, avg 0.311 ms/iter
-fuzzy_test kernel:    total 97.635 ms, avg 0.098 ms/iter
--------------------------------------------------
-MODE: thread_pool (first-fit)
-allocator_test suite: total 314.795 ms, avg 0.315 ms/iter
-fuzzy_test kernel:    total 93.428 ms, avg 0.093 ms/iter
--------------------------------------------------
-MODE: julian (freelist)
-CUDA Error: misaligned address at /home/testing/projects/cuda_memory/tests/benchmark_all.cu:728
-
----------------------------------------------------------
- Executing: ./build_USE_THREAD_LOCAL/tests/benchmark_all
----------------------------------------------------------
-============================================
-  benchmark_all.cu  (runtime switch, 3 modes)
-============================================
-Device: NVIDIA GeForce RTX 4090 Laptop GPU
-sharedMemPerBlock:       49152 bytes
-sharedMemPerBlockOptin:  101376 bytes
-
-allocator_test dyn smem: 49136 bytes
-fuzzy_test dyn smem:     32768 bytes
-BENCH_VERBOSE:           0 (0 recommended)
-
--------------------------------------------------
-MODE: thread_pool (first-fit)
-allocator_test suite: total 318.472 ms, avg 0.318 ms/iter
-fuzzy_test kernel:    total 94.643 ms, avg 0.095 ms/iter
--------------------------------------------------
-MODE: thread_pool (first-fit)
-allocator_test suite: total 292.721 ms, avg 0.293 ms/iter
-fuzzy_test kernel:    total 96.277 ms, avg 0.096 ms/iter
--------------------------------------------------
-MODE: julian (freelist)
-CUDA Error: misaligned address at /home/testing/projects/cuda_memory/tests/benchmark_all.cu:728
-
----------------------------------------------------------
- Executing: ./build_USE_WARP_LOCAL/tests/benchmark_all
----------------------------------------------------------
-============================================
-  benchmark_all.cu  (runtime switch, 3 modes)
-============================================
-Device: NVIDIA GeForce RTX 4090 Laptop GPU
-sharedMemPerBlock:       49152 bytes
-sharedMemPerBlockOptin:  101376 bytes
-
-allocator_test dyn smem: 49136 bytes
-fuzzy_test dyn smem:     32768 bytes
-BENCH_VERBOSE:           0 (0 recommended)
-
--------------------------------------------------
-MODE: thread_pool (first-fit)
-allocator_test suite: total 288.300 ms, avg 0.288 ms/iter
-fuzzy_test kernel:    total 90.329 ms, avg 0.090 ms/iter
--------------------------------------------------
-MODE: thread_pool (first-fit)
-allocator_test suite: total 294.754 ms, avg 0.295 ms/iter
-fuzzy_test kernel:    total 100.243 ms, avg 0.100 ms/iter
--------------------------------------------------
-MODE: julian (freelist)
-CUDA Error: misaligned address at /home/testing/projects/cuda_memory/tests/benchmark_all.cu:728
-
----------------------------------------------------------
- Executing: ./build_USE_FREELIST_ALLOCATOR/tests/benchmark_all
----------------------------------------------------------
-============================================
-  benchmark_all.cu  (runtime switch, 3 modes)
-============================================
-Device: NVIDIA GeForce RTX 4090 Laptop GPU
-sharedMemPerBlock:       49152 bytes
-sharedMemPerBlockOptin:  101376 bytes
-
-allocator_test dyn smem: 49136 bytes
-fuzzy_test dyn smem:     32768 bytes
-BENCH_VERBOSE:           0 (0 recommended)
-
--------------------------------------------------
-MODE: thread_pool (first-fit)
-allocator_test suite: total 323.790 ms, avg 0.324 ms/iter
-fuzzy_test kernel:    total 100.520 ms, avg 0.101 ms/iter
--------------------------------------------------
-MODE: thread_pool (first-fit)
-allocator_test suite: total 324.001 ms, avg 0.324 ms/iter
-fuzzy_test kernel:    total 94.138 ms, avg 0.094 ms/iter
--------------------------------------------------
-MODE: julian (freelist)
-CUDA Error: misaligned address at /home/testing/projects/cuda_memory/tests/benchmark_all.cu:728
-
----------------------------------------------------------
- Executing: ./build_USE_BST_ALLOCATOR/tests/benchmark_all
----------------------------------------------------------
-============================================
-  benchmark_all.cu  (runtime switch, 3 modes)
-============================================
-Device: NVIDIA GeForce RTX 4090 Laptop GPU
-sharedMemPerBlock:       49152 bytes
-sharedMemPerBlockOptin:  101376 bytes
-
-allocator_test dyn smem: 49136 bytes
-fuzzy_test dyn smem:     32768 bytes
-BENCH_VERBOSE:           0 (0 recommended)
-
--------------------------------------------------
-MODE: thread_pool (first-fit)
-allocator_test suite: total 303.756 ms, avg 0.304 ms/iter
-fuzzy_test kernel:    total 95.780 ms, avg 0.096 ms/iter
--------------------------------------------------
-MODE: thread_pool (first-fit)
-allocator_test suite: total 300.719 ms, avg 0.301 ms/iter
-fuzzy_test kernel:    total 88.598 ms, avg 0.089 ms/iter
--------------------------------------------------
-MODE: julian (freelist)
-CUDA Error: misaligned address at /home/testing/projects/cuda_memory/tests/benchmark_all.cu:728
-
----------------------------------------------------------
- Executing: ./build_native/tests/benchmark_all
----------------------------------------------------------
-============================================
-  benchmark_all.cu  (runtime switch, 3 modes)
-============================================
-Device: NVIDIA GeForce RTX 4090 Laptop GPU
-sharedMemPerBlock:       49152 bytes
-sharedMemPerBlockOptin:  101376 bytes
-
-allocator_test dyn smem: 49136 bytes
-fuzzy_test dyn smem:     32768 bytes
-BENCH_VERBOSE:           0 (0 recommended)
-
--------------------------------------------------
-MODE: thread_pool (first-fit)
-allocator_test suite: total 409.418 ms, avg 0.409 ms/iter
-fuzzy_test kernel:    total 113.996 ms, avg 0.114 ms/iter
--------------------------------------------------
-MODE: thread_pool (first-fit)
-allocator_test suite: total 462.204 ms, avg 0.462 ms/iter
-fuzzy_test kernel:    total 108.658 ms, avg 0.109 ms/iter
--------------------------------------------------
-MODE: julian (freelist)
-CUDA Error: misaligned address at /home/testing/projects/cuda_memory/tests/benchmark_all.cu:728
-
-
-
-[][][][][][][][]][[][][][][][][][][][[][][][][][][][][][][][][][][][][][][]]]
-All tests complete

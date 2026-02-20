@@ -314,10 +314,8 @@ __device__ void pool_init(std::size_t total_bytes) {
     __syncthreads();
 }
 
-// Probably works
+
 __device__ void* pmalloc_best_fit(std::size_t size) {
-
-
 
     if (threadIdx.x >= MAX_THREADS) return nullptr; // throw error in future
 
@@ -336,19 +334,30 @@ __device__ void* pmalloc_best_fit(std::size_t size) {
 
     while (curr != nullptr) {
         if (curr->bits.size >= aligned_size) {
-            best_fit = curr;
-            break;
+            best_fit = curr;  // fits but look for smaller
+        } else {
+            break;  // too small
         }
         curr = get_next_node(curr, pool_start);
     }
 
-    if (best_fit == false) {
+    if (best_fit == nullptr) {
         return nullptr;
     }
 
     free_list_remove(&(pool_manager->free_heads[pool_id]), best_fit, pool_start);
-    best_fit = split_block(&(pool_manager->free_heads[pool_id]), best_fit, size, pool_start);
-    
+
+    std::size_t original_total = block_total_size(best_fit);
+    std::size_t needed_total   = align_up(HEADER_SIZE + size + FOOTER_SIZE);
+    const std::size_t MIN_TOTAL_SPLIT = HEADER_SIZE + ALIGNMENT + FOOTER_SIZE;
+
+    if (original_total >= needed_total + MIN_TOTAL_SPLIT){
+        best_fit = split_block(&(pool_manager->free_heads[pool_id]), best_fit, size, pool_start);
+    } else {
+        best_fit->bits.free = 0;
+        footer_from_head(best_fit)->header = best_fit;
+    }
+
     return user_ptr(best_fit);
 }
 
