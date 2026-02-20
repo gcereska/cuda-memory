@@ -18,7 +18,7 @@ namespace thread_pool {
 }
 
 namespace warp_pool {
-    __device__ void  pool_init(std::size_t total_bytes);
+    __device__ void  pool_init(std::size_t total_bytes, int threads_per_pool = 1);
 
     __device__ void* pmalloc(std::size_t size);
 

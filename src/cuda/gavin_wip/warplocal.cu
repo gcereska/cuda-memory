@@ -2,6 +2,7 @@
 #include <cuda_runtime.h>
 #include <cstdint>
 #include <cstddef>
+#include <stdio.h>
 
 #include "allocator.cuh"
 
@@ -289,7 +290,7 @@ __device__ __forceinline__ void release_lock(int* lock) {
 // called by first warp, each thread in first warp initializes their own pool for the other warps
 // first thread in first warp initailzies pool managers, the "global variables" that all pools need
 // total bytes is the size of the entire shared pool, passed into pool_init
-__device__ void pool_init(std::size_t total_bytes, int threads_per_pool =  1) {
+__device__ void pool_init(std::size_t total_bytes, int threads_per_pool) {
     std::byte* shared_mem_ptr = get_shared_heap_base();
 
     pool_managers* pool_manager = reinterpret_cast<pool_managers*>(shared_mem_ptr);
@@ -297,10 +298,19 @@ __device__ void pool_init(std::size_t total_bytes, int threads_per_pool =  1) {
 
     
 
+    
+
     int num_pools = (blockDim.x + threads_per_pool - 1) / threads_per_pool;
+
     if (num_pools > MAX_POOLS) {
         threads_per_pool = (blockDim.x + MAX_POOLS - 1) / MAX_POOLS;
         num_pools = (blockDim.x + threads_per_pool - 1) / threads_per_pool;
+
+        if (threadIdx.x == 0){
+            printf("warp_pool: %d pools requested but max is %d, "
+                "auto-adjusting to %d threads/pool\n",
+                num_pools, MAX_POOLS, threads_per_pool);
+        }
     }
 
     // Calculate common constraints (all threads in warp need this info)
@@ -362,11 +372,16 @@ __device__ void pool_init(std::size_t total_bytes, int threads_per_pool =  1) {
 __device__ void* pmalloc(std::size_t size) {
     int pool_id = get_pool_id();
     
-    if (pool_id >= MAX_POOLS) return nullptr;
+
 
     std::byte* shared_mem_ptr = get_shared_heap_base();
     pool_managers* pool_manager = reinterpret_cast<pool_managers*>(shared_mem_ptr);
     std::byte* pool_start = pool_manager->pool_starts[pool_id];
+
+    if (pool_id >= pool_manager->num_pools) {
+        printf("pool_id >= num_pools during pmalloc");
+        return nullptr;
+    }
 
     acquire_lock(&pool_manager->spinlocks[pool_id]);
 
@@ -398,13 +413,17 @@ __device__ void* pmalloc(std::size_t size) {
 
 __device__ void* pmalloc_best_fit(std::size_t size) {
     int pool_id = get_pool_id();
-    
-    if (pool_id >= MAX_POOLS) return nullptr;
+
 
     std::byte* shared_mem_ptr = get_shared_heap_base();
     pool_managers* pool_manager = reinterpret_cast<pool_managers*>(shared_mem_ptr);
     std::byte* pool_start = pool_manager->pool_starts[pool_id];
     size_t aligned_size = align_up(size);
+
+    if (pool_id >= pool_manager->num_pools) {
+        printf("pool_id >= num_pools during pmalloc best fit");
+        return nullptr;
+    }
 
     acquire_lock(&pool_manager->spinlocks[pool_id]);
 
@@ -451,12 +470,16 @@ __device__ void pfree(void* ptr) {
     
     int pool_id = get_pool_id();
     
-    if (pool_id >= MAX_POOLS) return;
 
     std::byte* shared_mem_ptr = get_shared_heap_base();
     pool_managers* pool_manager = reinterpret_cast<pool_managers*>(shared_mem_ptr);
     std::byte* pool_start = pool_manager->pool_starts[pool_id];
     std::byte* pool_end = pool_manager->pool_ends[pool_id];
+
+    if (pool_id >= pool_manager->num_pools) {
+        printf("pool_id >= num_pools during pfree");
+        return;
+    }
 
     acquire_lock(&pool_manager->spinlocks[pool_id]);
 

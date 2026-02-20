@@ -47,12 +47,15 @@ enum Allocator_Modes_enum : int {
 // Managed globals on unified memory so kernels can stay the same signature 
 __device__ __managed__ int    g_mode = MODE_THREAD_FIRST_FIT; // mode of the kernel call
 __device__ __managed__ size_t g_dyn_smem_bytes = 0; // number of bytes requested for a kernel call needed for pool_init
+__device__ __managed__ int    g_threads_per_pool = 1;
 // we run the same kernel calls but change these global (unified) variables to switch which allocator to use
 
 
 __device__ __forceinline__ void init_based_on_g_mode() {
     switch (g_mode) {
         case MODE_THREAD_FIRST_FIT:
+            thread_pool::pool_init(g_dyn_smem_bytes);
+            break;
         case MODE_THREAD_BEST_FIT:
             thread_pool::pool_init(g_dyn_smem_bytes);
             break;
@@ -63,7 +66,10 @@ __device__ __forceinline__ void init_based_on_g_mode() {
             pmalloc_bst::init_gpu_buffer(g_dyn_smem_bytes);
             break;
         case MODE_WARP_FIRST_FIT:
-            //warp_pool::pool_init(g_dyn_smem_bytes, g_threads_per_pool);
+            warp_pool::pool_init(g_dyn_smem_bytes, g_threads_per_pool);
+            break;
+        case MODE_WARP_BEST_FIT:
+            warp_pool::pool_init(g_dyn_smem_bytes, g_threads_per_pool);
             break;
         case MODE_DEVICE_MALLOC:
         default:
@@ -78,6 +84,8 @@ __device__ __forceinline__ void* alloc_based_on_g_mode(size_t n) {
         case MODE_FREELIST:          return pmalloc_freelist::cmalloc(n);
         case MODE_BST:               return pmalloc_bst::cmalloc(n);
         case MODE_DEVICE_MALLOC:     return malloc(n);
+        case MODE_WARP_BEST_FIT:     return warp_pool::pmalloc_best_fit(n);
+        case MODE_WARP_FIRST_FIT:    return warp_pool::pmalloc(n);
         default:                     return nullptr;
     }
 }
@@ -86,6 +94,8 @@ __device__ __forceinline__ void free_based_on_g_mode(void* p) {
     if (!p) return;
     switch (g_mode) {
         case MODE_THREAD_FIRST_FIT:
+            thread_pool::pfree(p);
+            break;
         case MODE_THREAD_BEST_FIT:
             thread_pool::pfree(p);
             break;
@@ -94,6 +104,12 @@ __device__ __forceinline__ void free_based_on_g_mode(void* p) {
             break;
         case MODE_BST:
             pmalloc_bst::cfree(p);
+            break;
+        case MODE_WARP_BEST_FIT:
+            warp_pool::pfree(p);
+            break;
+        case MODE_WARP_FIRST_FIT:
+            warp_pool::pfree(p);
             break;
         case MODE_DEVICE_MALLOC:
             free(p);
@@ -686,8 +702,8 @@ const char* mode_name(int m) {
         case MODE_FREELIST:         return "julian (freelist)";
         case MODE_BST:              return "julian (BST best-fit)";
         case MODE_DEVICE_MALLOC:    return "device malloc/free";
-        // case MODE_WARP_FIRST_FIT    return "warp_pool (first-fit)"
-        // case MODE_WARP_BEST_FIT     return "warp_pool (best-fit)"
+        case MODE_WARP_FIRST_FIT:   return "warp_pool (first-fit)";
+        case MODE_WARP_BEST_FIT:    return "warp_pool (best-fit)";
         default:                    return "unknown";
     }
 }
@@ -800,17 +816,30 @@ int main(int argc, char** argv) {
     CUDA_CHECK(cudaMemcpy(d_ops, h_ops, sizeof(h_ops), cudaMemcpyHostToDevice));
 
     // Benchmark config
-
+    int run_idx = -1;
     //for (int mode : {MODE_THREAD_FIRST_FIT, MODE_TL_BEST_FIT, MODE_DEVICE_MALLOC}) {
     for(int mode : {
         MODE_THREAD_FIRST_FIT, 
+        MODE_THREAD_BEST_FIT,
+        MODE_WARP_FIRST_FIT,
+        MODE_WARP_BEST_FIT,
+        MODE_DEVICE_MALLOC,
         MODE_THREAD_FIRST_FIT, 
-        //MODE_THREAD_BEST_FIT,
-        //MODE_DEVICE_MALLOC,
+        MODE_THREAD_BEST_FIT,
+        MODE_WARP_FIRST_FIT,
+        MODE_WARP_BEST_FIT,
+        MODE_DEVICE_MALLOC,
         MODE_FREELIST,
         MODE_BST,
-        MODE_DEVICE_MALLOC,
     }){
+        run_idx++;
+
+        // HARDCODED SWITCH TO 8 THREADS PER POOL FOR WARP POOL SHOULD CHANGE
+        if (run_idx == 4) {
+            g_threads_per_pool = 8;
+        }
+        // HARDCODED SWITCH TO 8 THREADS PER POOL FOR WARP POOL SHOULD CHANGE
+
         g_mode = mode;
         CUDA_CHECK(cudaDeviceSynchronize());
 

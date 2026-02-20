@@ -63,6 +63,8 @@ pip install torch==2.9.1 torchvision==0.24.1 torchaudio==2.9.1 --index-url https
 // RUN SCRIPTS
 bash scripts/build_all.sh && bash scripts/run_all.sh > output.txt
 
+./build_native/tests/benchmark_all > benchmark_all_output.txt
+
 //MAKE SPECIFIC BUILDS
 cmake -B build -DUSE_THREAD_LOCAL_BEST_FIT
 cmake -B build -DUSE_WARP_LOCAL_BEST_FIT
