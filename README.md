@@ -124,8 +124,6 @@ target_compile_definitions(my_target PRIVATE USE_WARP_LOCAL_BEST_FIT)
 - All Threads must call pool_init(dyn_smem_size)
 - Pass in shared memory size into kernel ex:
 - simple_test_kernel<<<1, 32, dyn_smem_size>>>(dyn_smem_size);
-
-### Dont Do These
 - Dont double free
 - Dont free memory thats allocated from another thread
 
