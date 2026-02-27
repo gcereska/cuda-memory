@@ -15,7 +15,7 @@ macro(cuda_memory_test namel)
     PROPERTIES CUDA_SEPARABLE_COMPILATION ON
   )
 
-  target_compile_options(${namel} PRIVATE 
+  target_compile_options(${namel} PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>:-diag-suppress=177,550,127>
   )
 
@@ -38,4 +38,3 @@ macro(cuda_memory_test namel)
 
   add_test(NAME ${namel} COMMAND ${namel})
 endmacro()
-

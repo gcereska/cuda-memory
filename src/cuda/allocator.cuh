@@ -5,7 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 
-// Initializes the shared memory heap. 
+// Initializes the shared memory heap.
 // Must be called by ALL threads in the block for my implementation
 namespace thread_pool {
     __device__ void  pool_init(std::size_t total_bytes);

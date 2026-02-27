@@ -28,7 +28,7 @@ string(TOUPPER ${CMAKE_BUILD_TYPE} buildu)
 set(namel ${PROJECT_NAME})
 string(TOUPPER ${namel} nameu)
 
-file(GLOB src_files 
+file(GLOB src_files
   cpu/pmalloc_*.cpp
   cpu/cpuPoolMalloc.c
   )
@@ -51,7 +51,7 @@ add_library(${namel}::${namel} ALIAS ${namel}_${buildl})
 
 # CUDA source codes
 if (CUDA)
-  file(GLOB cu_src_files 
+  file(GLOB cu_src_files
     cuda/threadlocal.cu
     cuda/poolAllocBST.cu
     cuda/poolAlloc.cu

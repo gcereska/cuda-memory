@@ -25,7 +25,7 @@ for FLAG in "${FLAGS[@]}"; do
     cmake --build ${BUILD_DIR} -j
     # Save the executable with the flag name
   fi
-  
+
   echo -e "Finished re-building bench_${FLAG}\n"
 done
 

@@ -46,9 +46,9 @@ __global__ void allocate_and_write(int **ptrs, int n, uint sharedMemSize) {
     }
 
     // if (idx < n && ptrs[idx] != NULL) {
-        
+
     // }
-    
+
 }
 
 //attempting to access the same piece of shared memory across multiple kernels is illegal and will result in undefined behaviors
@@ -83,7 +83,7 @@ int main() {
 
     // read_and_free<<<1, n, sharedMemSize>>>(d_ptrs, n);
     cudaDeviceSynchronize();
-    
+
     printf("post read & free\n");
 
 

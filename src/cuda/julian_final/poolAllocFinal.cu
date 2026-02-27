@@ -27,8 +27,8 @@ class MemBufferStorage{
         __device__ MemBufferStorage(): memBuffer(nullptr), freeList(), fullList(){}
 
         // Constructor with buffer parameter
-        __device__ MemBufferStorage(unsigned char* buffer) 
-            : memBuffer(buffer), 
+        __device__ MemBufferStorage(unsigned char* buffer)
+            : memBuffer(buffer),
               freeList(),//these need to be initialized properly, namely the free list needs to start with the base of the mem buffer as well
               fullList()
         {
@@ -37,19 +37,19 @@ class MemBufferStorage{
         __device__ unsigned char* base() {
             return memBuffer;
         }
-        
+
         __device__ void setMemBuffer(unsigned char* input){
             memBuffer = input;
         }
 
-        
+
 
 
 };
 
 __device__ MemBufferStorage memPools[MEM_MAX_THREADS];
 
-__device__ uint sharedMemSize; 
+__device__ uint sharedMemSize;
 
 __device__ uint get_thread_pool_size(){
     return (sharedMemSize);
@@ -66,7 +66,7 @@ __device__ uint get_linear_thread_index(){
 
 class BlockHeader {
     /*
-    first bit will be full status, second bit will be color 
+    first bit will be full status, second bit will be color
     typedef struct{
         int16_t fullStatus : 1
         int16_t color : 1
@@ -81,7 +81,7 @@ class BlockHeader {
 
     public:
         BlockHeader(int16_t fullSize,int16_t nextOffset, int16_t prevOffset)
-            :fullSize(fullSize), nextOffset(nextOffset),prevOffset(prevOffset),padding(0){}  
+            :fullSize(fullSize), nextOffset(nextOffset),prevOffset(prevOffset),padding(0){}
 
 
         __device__ int16_t size() {
@@ -92,7 +92,7 @@ class BlockHeader {
             return fullSize < 0;
         }
 
-        __device__ int16_t calculateOffset(unsigned char* to) { 
+        __device__ int16_t calculateOffset(unsigned char* to) {
             return to - (unsigned char*)this;
         }
 
@@ -108,7 +108,7 @@ class BlockHeader {
             uint threadIndex = get_linear_thread_index();
 
             if((void*)this == (void*)memPools[threadIndex].base() ){
-                return NULL; 
+                return NULL;
             }
 
             BlockFooter* previousFooter = prevFooter();
@@ -119,14 +119,14 @@ class BlockHeader {
 
         __device__ BlockHeader* debugNextHeader(){
             uint threadIndex = get_linear_thread_index();
-            uint threadPoolSize = get_thread_pool_size(); 
-            
+            uint threadPoolSize = get_thread_pool_size();
+
             int currentHeaderOffset = calculateOffset(memPools[threadIndex].base());
 
             if((currentHeaderOffset + size() + sizeof(BlockHeader) + sizeof(BlockFooter)) >= threadPoolSize){
                 return NULL;
             }
-            
+
             return (BlockHeader*)((unsigned char*)this + size() + sizeof(BlockFooter) + sizeof(BlockHeader));
         }
 
@@ -142,7 +142,7 @@ class BlockHeader {
                 return NULL;
             }
             return (BlockHeader*)((unsigned char*)this + prevOffset);
-        }    
+        }
 
         __device__ void setNextOffset(BlockHeader* input) {
             nextOffset = input ? calculateOffset((unsigned char*)input) : 0;
@@ -155,17 +155,17 @@ class BlockHeader {
 };
 
 class BlockFooter {
-    private:    
+    private:
         int16_t headerOffset;
 
-    public: 
+    public:
 
         __device__ BlockFooter(RBTreeBlockHeader* header)
             :headerOffset((char*)this - (char*)header){}
 
         int16_t headerOffset(){
             return headerOffset;
-        } 
+        }
 
         __device__ void setOffset(RBTreeBlockHeader* header){
             headerOffset = (char*)this - (char*)header;
@@ -205,7 +205,7 @@ public:
         return tail;
     }
 
-   
+
 
     // Check if list is empty
     __device__ bool isEmpty() {
@@ -255,12 +255,12 @@ public:
         BlockHeader* prev = current->prevHeader();
         node->setNextOffset(current);
         node->setPrevOffset(prev);
-        
+
         if (prev != nullptr) {
             prev->setNextOffset(node);
         }
         current->setPrevOffset(node);
-        
+
     }
 
     // Remove a specific node from the list
@@ -335,14 +335,14 @@ public:
     // Find the first block that is at least the requested size (best fit from largest)
     __device__ BlockHeader* findFirstFit(int16_t requestedSize) {
         BlockHeader* current = head;
-        
+
         while (current != nullptr) {
             if (current->size() >= requestedSize) {
                 return current;
             }
             current = current->nextHeader();
         }
-        
+
         return nullptr; // No suitable block found
     }
 
@@ -350,7 +350,7 @@ public:
     __device__ BlockHeader* findBestFit(int16_t requestedSize) {
         BlockHeader* current = head;
         BlockHeader* bestFit = nullptr;
-        
+
         while (current != nullptr) {
             if (current->size() >= requestedSize) {
                 // Since list is ordered largest to smallest,
@@ -362,14 +362,14 @@ public:
             }
             current = current->nextHeader();
         }
-        
+
         return bestFit;
     }
 
     // Find a block by exact size
     __device__ BlockHeader* findBySize(int16_t targetSize) {
         BlockHeader* current = head;
-        
+
         while (current != nullptr) {
             if (current->size() == targetSize) {
                 return current;
@@ -380,21 +380,21 @@ public:
             }
             current = current->nextHeader();
         }
-        
+
         return nullptr;
     }
 
     // Check if a specific node is in the list
     __device__ bool contains(BlockHeader* node) {
         BlockHeader* current = head;
-        
+
         while (current != nullptr) {
             if (current == node) {
                 return true;
             }
             current = current->nextHeader();
         }
-        
+
         return false;
     }
 
@@ -436,7 +436,7 @@ public:
         int nodeCount = 0;
         BlockHeader* current = head;
         BlockHeader* prev = nullptr;
-        
+
         while (current != nullptr) {
             // Verify prev pointer
             if (current->prevHeader() != prev) {
@@ -464,22 +464,22 @@ public:
 
 __device__ void init_gpu_buffer(unsigned int incomingMemSize){
 
-    
+
 
     extern __shared__ unsigned char smem[];
 
     uint threadIndex = get_linear_thread_index();
 
     // // printf("linear thread index: %d\n",threadIndex);
-   
+
     if(threadIndex == 0){
         sharedMemSize = incomingMemSize;
     }
     __syncthreads();
     /*
-    
+
     Because all operations use an offset based scheme to find neighbors,
-    it is important to be very careful about the size of these the pool per thread. 
+    it is important to be very careful about the size of these the pool per thread.
 
     At most it is acceptable to have 2^15 bytes,
     however past that the bit packing will be upset and the size of the offset variables will need to be upgraded
@@ -510,7 +510,7 @@ __device__ void init_gpu_buffer(unsigned int incomingMemSize){
 
     memPools[threadIndex].freeList.insert(header);
 
-    
+
     BlockFooter *footer = new (header->footer()) BlockFooter(header);
 
 
@@ -539,10 +539,10 @@ __device__ void* cmalloc(unsigned long size){
 
     // Create new free block if there's enough space
     uint16_t remainingSize = preAllocationSize - (sizeToAlloc + sizeof(RBTreeBlockHeader) + sizeof(BlockFooter));
-    
+
     if(remainingSize > 0){
         RBTreeBlockHeader* newFreeHeader = new ((unsigned char*)(newlyAllocatedFooter) + sizeof(BlockFooter)) RBTreeBlockHeader(remainingSize & 0x7FFF, 0,0,0);
-        
+
         BlockFooter *newFreeFooter = new (newFreeHeader->footer()) BlockFooter(newFreeHeader);
         // list_push_front(&memPools[threadIndex].freeList, newFreeHeader);
 
@@ -578,7 +578,7 @@ __device__ void cfree(void* addressForDeletion){
     if(prevHeader != NULL && !prevHeader->isFull()){
         backward_coalesce_valid = 1;
     }
-    
+
     if(nextHeader != NULL && !nextHeader->isFull()){
         forward_coalesce_valid = 1;
     }
@@ -587,7 +587,7 @@ __device__ void cfree(void* addressForDeletion){
     if(forward_coalesce_valid){
         int16_t tempSize = deletionTarget->size();
         tempSize += sizeof(BlockFooter) + sizeof(RBTreeBlockHeader) + nextHeader->size();
-        
+
         deletionTarget->setSize(tempSize & 0x7FFF);
 
         BlockFooter *nextBlockFooter = new (deletionTarget->footer()) BlockFooter(deletionTarget);

@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
             //        ops[idx].corrospondingAlloc);
         }
     }
-    
+
     TestOperation *d_ops;
     cudaMalloc(&d_ops, sizeof(TestOperation) * NUM_THREADS * OPS_PER_THREAD);
     cudaMemcpy(d_ops, ops, sizeof(TestOperation) * NUM_THREADS * OPS_PER_THREAD, cudaMemcpyHostToDevice);

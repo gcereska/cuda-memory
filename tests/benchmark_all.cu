@@ -34,17 +34,17 @@
 #endif
 
 // ===================== MODES =====================
-enum Allocator_Modes_enum : int { 
-    MODE_THREAD_FIRST_FIT=0,  // thread local 
+enum Allocator_Modes_enum : int {
+    MODE_THREAD_FIRST_FIT=0,  // thread local
     MODE_THREAD_BEST_FIT =1,   // thread local best fit
     MODE_FREELIST        =2,      // julian freelist
     MODE_BST             =3,           // julian BST
     MODE_DEVICE_MALLOC   =4, // native cuda
-    MODE_WARP_FIRST_FIT  =5,  
-    MODE_WARP_BEST_FIT   =6,  
+    MODE_WARP_FIRST_FIT  =5,
+    MODE_WARP_BEST_FIT   =6,
 };
 
-// Managed globals on unified memory so kernels can stay the same signature 
+// Managed globals on unified memory so kernels can stay the same signature
 __device__ __managed__ int    g_mode = MODE_THREAD_FIRST_FIT; // mode of the kernel call
 __device__ __managed__ size_t g_dyn_smem_bytes = 0; // number of bytes requested for a kernel call needed for pool_init
 __device__ __managed__ int    g_threads_per_pool = 1;
@@ -162,11 +162,11 @@ __global__ void test_single_alloc_free() {
     if (ptr2 == nullptr) { BENCH_PRINTF("  Thread %d: reallocation after free failed\n", threadIdx.x); passed = false; }
     free_based_on_g_mode(ptr2);
 
-     
+
 
     __syncthreads();
     if (threadIdx.x == 0) BENCH_PRINTF("[TEST 2] Single alloc/free: %s\n", passed ? "PASSED" : "FAILED");
-    
+
 }
 
 __global__ void test_multiple_allocs() {
@@ -192,7 +192,7 @@ __global__ void test_multiple_allocs() {
     }
     for (int i = 0; i < NUM_ALLOCS; i++) free_based_on_g_mode(ptrs[i]);
 
-     
+
 
     __syncthreads();
     if (threadIdx.x == 0) BENCH_PRINTF("[TEST 3] Multiple sequential allocations: %s\n", passed ? "PASSED" : "FAILED");
@@ -219,7 +219,7 @@ __global__ void test_coalescing() {
         else free_based_on_g_mode(big_ptr);
     }
 
-     
+
 
     __syncthreads();
     if (threadIdx.x == 0) BENCH_PRINTF("[TEST 4] Coalescing: %s\n", passed ? "PASSED" : "FAILED");
@@ -249,7 +249,7 @@ __global__ void test_coalescing_orders() {
     if (!c1 || !c2 || !c3) passed = false;
     else { free_based_on_g_mode(c1); free_based_on_g_mode(c3); free_based_on_g_mode(c2); }
 
-     
+
 
     __syncthreads();
     if (threadIdx.x == 0) BENCH_PRINTF("[TEST 5] Coalescing orders (left/right/both): %s\n", passed ? "PASSED" : "FAILED");
@@ -275,7 +275,7 @@ __global__ void test_splitting() {
     free_based_on_g_mode(ptr1);
     free_based_on_g_mode(ptr2);
 
-     
+
 
     __syncthreads();
     if (threadIdx.x == 0) BENCH_PRINTF("[TEST 6] Block splitting: %s\n", passed ? "PASSED" : "FAILED");
@@ -300,7 +300,7 @@ __global__ void test_size_boundaries() {
         }
     }
 
-     
+
 
     __syncthreads();
     if (threadIdx.x == 0) BENCH_PRINTF("[TEST 7] Size boundaries: %s\n", passed ? "PASSED" : "FAILED");
@@ -332,7 +332,7 @@ __global__ void test_exhaustion() {
     if (!recovery) { BENCH_PRINTF("  Thread %d: recovery allocation failed\n", threadIdx.x); passed = false; }
     else free_based_on_g_mode(recovery);
 
-     
+
 
     __syncthreads();
     if (threadIdx.x == 0) BENCH_PRINTF("[TEST 8] Exhaustion and recovery: %s\n", passed ? "PASSED" : "FAILED");
@@ -358,7 +358,7 @@ __global__ void test_fragmentation() {
     if (!big) { BENCH_PRINTF("  Thread %d: large alloc after defrag failed\n", threadIdx.x); passed = false; }
     else free_based_on_g_mode(big);
 
-     
+
 
     __syncthreads();
     if (threadIdx.x == 0) BENCH_PRINTF("[TEST 9] Fragmentation stress: %s\n", passed ? "PASSED" : "FAILED");
@@ -390,7 +390,7 @@ __global__ void test_free_list_order() {
         free_based_on_g_mode(third);
     }
 
-     
+
 
     __syncthreads();
     if (threadIdx.x == 0) BENCH_PRINTF("[TEST 10] Free list ordering: %s\n", passed ? "PASSED" : "FAILED");
@@ -405,7 +405,7 @@ __global__ void test_null_free() {
     bool passed = (ptr != nullptr);
     free_based_on_g_mode(ptr);
 
-     
+
 
     __syncthreads();
     if (threadIdx.x == 0) BENCH_PRINTF("[TEST 11] Null pointer free: %s\n", passed ? "PASSED" : "FAILED");
@@ -423,7 +423,7 @@ __global__ void test_double_free() {
     bool passed = true;
     free_based_on_g_mode(ptr2);
 
-     
+
 
     __syncthreads();
     if (threadIdx.x == 0) BENCH_PRINTF("[TEST 12] Double free (no crash): %s\n", passed ? "PASSED" : "FAILED");
@@ -450,7 +450,7 @@ __global__ void test_max_allocation() {
         free_based_on_g_mode(ptr);
     }
 
-     
+
 
     __syncthreads();
     if (threadIdx.x == 0) BENCH_PRINTF("[TEST 13] Maximum single allocation: %s\n", passed ? "PASSED" : "FAILED");
@@ -472,7 +472,7 @@ __global__ void test_alignment() {
         }
     }
 
-     
+
 
     __syncthreads();
     if (threadIdx.x == 0) BENCH_PRINTF("[TEST 14] Alignment verification: %s\n", passed ? "PASSED" : "FAILED");
@@ -512,7 +512,7 @@ __global__ void test_interleaved() {
     if (!final_ptr) passed = false;
     free_based_on_g_mode(final_ptr);
 
-     
+
 
     __syncthreads();
     if (threadIdx.x == 0) BENCH_PRINTF("[TEST 15] Interleaved alloc/free: %s\n", passed ? "PASSED" : "FAILED");
@@ -529,7 +529,7 @@ __global__ void test_zero_alloc() {
     bool passed = (normal != nullptr);
     free_based_on_g_mode(normal);
 
-     
+
 
     __syncthreads();
     if (threadIdx.x == 0) BENCH_PRINTF("[TEST 16] Zero-size allocation: %s\n", passed ? "PASSED" : "FAILED");
@@ -580,7 +580,7 @@ __global__ void test_repeated_cycles() {
         free_based_on_g_mode(ptr);
     }
 
-     
+
 
     __syncthreads();
     if (threadIdx.x == 0) BENCH_PRINTF("[TEST 18] Repeated alloc/free cycles: %s\n", passed ? "PASSED" : "FAILED");
@@ -612,7 +612,7 @@ __global__ void test_mixed_sizes() {
     free_based_on_g_mode(ptrs[5]);
     free_based_on_g_mode(ptrs[3]);
 
-     
+
 
     __syncthreads();
     if (threadIdx.x == 0) BENCH_PRINTF("[TEST 19] Mixed size allocations: %s\n", passed ? "PASSED" : "FAILED");
@@ -711,7 +711,7 @@ const char* mode_name(int m) {
 float time_allocator_suite_once(size_t dynBytes) {
     g_dyn_smem_bytes = dynBytes;
 
-    CUDA_CHECK(cudaDeviceSynchronize()); 
+    CUDA_CHECK(cudaDeviceSynchronize());
 
     cudaEvent_t s,e;
     CUDA_CHECK(cudaEventCreate(&s));
@@ -779,7 +779,7 @@ float time_fuzzy_once(const TestOperation* d_ops, size_t dynBytes) {
 int main(int argc, char** argv) {
     // Seed control for fuzzy test
     int seed = 0;
-    int iters  = 1000; 
+    int iters  = 1000;
 
 
 
@@ -819,12 +819,12 @@ int main(int argc, char** argv) {
     int run_idx = -1;
     //for (int mode : {MODE_THREAD_FIRST_FIT, MODE_TL_BEST_FIT, MODE_DEVICE_MALLOC}) {
     for(int mode : {
-        MODE_THREAD_FIRST_FIT, 
+        MODE_THREAD_FIRST_FIT,
         MODE_THREAD_BEST_FIT,
         MODE_WARP_FIRST_FIT,
         MODE_WARP_BEST_FIT,
         MODE_DEVICE_MALLOC,
-        MODE_THREAD_FIRST_FIT, 
+        MODE_THREAD_FIRST_FIT,
         MODE_THREAD_BEST_FIT,
         MODE_WARP_FIRST_FIT,
         MODE_WARP_BEST_FIT,
@@ -854,7 +854,7 @@ int main(int argc, char** argv) {
         printf("allocator_test suite: total %.3f ms, avg %.3f ms/iter\n",
                ms_suite, ms_suite / iters);
 
-        // Warmup 
+        // Warmup
         (void)time_fuzzy_once(d_ops, SHARED_MEM_FUZZY);
 
         // Time fuzzy

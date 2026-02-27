@@ -28,7 +28,7 @@ The project provides:
 
 ```bash
 # Configure and build
-cmake -B build 
+cmake -B build
 cmake --build build -j
 
 # Run the benchmark (1000 iterations per allocator)
@@ -132,7 +132,7 @@ target_compile_definitions(my_target PRIVATE USE_WARP_LOCAL_BEST_FIT)
 
 **Files:** `src/cuda/threadlocal.cu`, `src/include/allocator.cuh`
 
-Each thread gets its own private memory pool carved from shared memory. 
+Each thread gets its own private memory pool carved from shared memory.
 
 **How it works:**
 - Shared memory is divided equally among 32 threads (1 pool per thread)
@@ -325,7 +325,7 @@ Without the `cudaFuncSetAttribute` call, launching with more than `sharedMemPerB
 
 ## Usage Patterns
 
-### Macro Interface 
+### Macro Interface
 
 The macro interface lets you select an allocator at compile time and the macros route `pool_init`, `pmalloc`, and `pfree` to the right implementation:
 
@@ -458,4 +458,3 @@ If you want to add a new allocator to this project:
 - To add new tests you have to manually add them to the Cmake GLOBs.
 
 ---
-

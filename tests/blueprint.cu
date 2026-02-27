@@ -30,16 +30,16 @@ __global__ void simple_test_kernel(size_t pool_size) {
 
 int main() {
 
-    
+
     printf(" Allocator Mode: %s\n", ALLOCATOR_NAME);
     printf("============================================\n\n");
-    
-    size_t dyn_smem = 32 * 1024; // 32 KB shared memory
-    
 
-    
+    size_t dyn_smem = 32 * 1024; // 32 KB shared memory
+
+
+
     simple_test_kernel<<<1, 32, dyn_smem>>>(dyn_smem);
-    
+
     cudaError_t launchErr = cudaGetLastError();
     if (launchErr != cudaSuccess) {
         printf("Launch error: %s\n", cudaGetErrorString(launchErr));
@@ -49,8 +49,8 @@ int main() {
     if (err != cudaSuccess) {
         printf("Runtime error: %s\n", cudaGetErrorString(err));
     }
-    
+
     printf("\nDone\n");
-    
+
     return 0;
 }

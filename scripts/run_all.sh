@@ -33,16 +33,16 @@ for TARGET in "${TARGETS[@]}"; do
       echo "---------------------------------------------------------"
       echo " Executing: $EXE_PATH"
       echo "---------------------------------------------------------"
-      
+
       # Run it
       $EXE_PATH
-      
+
       echo "" # Print a blank line for readability
     else
       echo " [SKIPPED] Could not find executable: $EXE_PATH"
     fi
   done
-  
+
   echo -e "\n"
 done
 
