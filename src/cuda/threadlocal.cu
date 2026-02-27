@@ -3,19 +3,19 @@
 #include <cuda_runtime.h>
 #include <cstdint>
 #include <cstddef>
-#include "allocator.cuh" 
+#include "allocator.cuh"
 
 namespace thread_pool {
 
 static constexpr int MAX_THREADS = 32; // 1 pool per thread, max 32 threads
-static constexpr size_t ALIGNMENT = 8; 
+static constexpr size_t ALIGNMENT = 8;
 static constexpr uint16_t DEFAULT_OFFSET = 0xFFFF;
 
 static constexpr size_t HEADER_SIZE = sizeof(uint64_t); // both 8 bytes
-static constexpr size_t FOOTER_SIZE = sizeof(void*);   
+static constexpr size_t FOOTER_SIZE = sizeof(void*);
 
 
-struct BlockHeader; 
+struct BlockHeader;
 struct BlockFooter;
 
 struct BlockFooter {
@@ -40,9 +40,9 @@ struct pool_managers {
     std::byte*   shared_memory_start;
     int          shared_memory_size;
 
-    BlockHeader* free_heads[MAX_THREADS];      
-    std::byte*   pool_starts[MAX_THREADS];     
-    std::byte*   pool_ends[MAX_THREADS];         
+    BlockHeader* free_heads[MAX_THREADS];
+    std::byte*   pool_starts[MAX_THREADS];
+    std::byte*   pool_ends[MAX_THREADS];
 };
 
 __device__ __forceinline__ std::byte* get_shared_heap_base() {
@@ -107,7 +107,7 @@ __device__ inline BlockHeader* left_neighbors_header(BlockHeader* h, std::byte* 
     if (before < pool_start) return nullptr;
     BlockFooter* left_footer = reinterpret_cast<BlockFooter*>(before);
     BlockHeader* left_header = left_footer->header;
-    
+
     if (footer_from_head(left_header) != left_footer) return nullptr;
 
     return left_header;
@@ -151,14 +151,14 @@ __device__ inline void free_list_insert(BlockHeader** free_heads, BlockHeader* h
 
 __device__ inline void free_list_remove(BlockHeader** free_heads, BlockHeader* h_ptr, std::byte* pool_start) {
     if (h_ptr == nullptr) return;
-    
+
     BlockHeader* prev = get_prev_node(h_ptr, pool_start);
     BlockHeader* next = get_next_node(h_ptr, pool_start);
 
     if (prev != nullptr) {
         prev->bits.next = h_ptr->bits.next;
     } else {
-        *free_heads = next; 
+        *free_heads = next;
     }
 
     if (next != nullptr) {
@@ -167,7 +167,7 @@ __device__ inline void free_list_remove(BlockHeader** free_heads, BlockHeader* h
 
     h_ptr->bits.prev = DEFAULT_OFFSET;
     h_ptr->bits.next = DEFAULT_OFFSET;
-    h_ptr->bits.free = 0; 
+    h_ptr->bits.free = 0;
 }
 
 
@@ -176,7 +176,7 @@ __device__ inline BlockHeader* split_block(BlockHeader** free_heads, BlockHeader
     size_t original_total = block_total_size(h_ptr);
 
     size_t total_to_use = align_up(HEADER_SIZE + requested_size + FOOTER_SIZE);
-    
+
 
     size_t aligned_payload = total_to_use - HEADER_SIZE - FOOTER_SIZE;
 
@@ -189,16 +189,16 @@ __device__ inline BlockHeader* split_block(BlockHeader** free_heads, BlockHeader
     std::byte* rem_start = reinterpret_cast<std::byte*>(h_ptr) + total_to_use;
 
     BlockHeader* r_ptr = reinterpret_cast<BlockHeader*>(rem_start);
-    
+
     r_ptr->bits.size = remain_total - HEADER_SIZE - FOOTER_SIZE;
     r_ptr->bits.free = 1;
     r_ptr->bits.prev = DEFAULT_OFFSET;
     r_ptr->bits.next = DEFAULT_OFFSET;
-    
+
     footer_from_head(r_ptr)->header = r_ptr;
-    
+
     free_list_insert(free_heads, r_ptr, pool_start);
-    
+
     return h_ptr;
 }
 
@@ -239,7 +239,7 @@ __device__ inline BlockHeader* coalesce(BlockHeader** free_heads, BlockHeader* h
 // SHARED MEMORY LIMITS BY ARCHITECTURE:
 // - Kepler/Maxwell/Pascal (SM 3.x-6.x):  48 KB per block
 // - Volta (SM 7.0):                      96 KB per block
-// - Turing (SM 7.5):                     64 KB per block  
+// - Turing (SM 7.5):                     64 KB per block
 // - Ampere (SM 8.0/8.6):                 100-164 KB per block
 // - Hopper (SM 9.0):                     up to 228 KB per block
 //
@@ -247,7 +247,7 @@ __device__ inline BlockHeader* coalesce(BlockHeader** free_heads, BlockHeader* h
 // Each pool uses 16-bit offsets for prev/next pointers in the free list.
 // This limits individual pool size to 2^16 - 1 = 65,535 bytes (64 KB + 1).
 //   - 48 KB shared memory:  ceil(48/64)  = 1 thread minimum
-//   - 164 KB shared memory: ceil(164/64) = 3 threads minimum  
+//   - 164 KB shared memory: ceil(164/64) = 3 threads minimum
 //   - 228 KB shared memory: ceil(228/64) = 4 threads minimum
 
 __device__ void pool_init(std::size_t total_bytes) {
@@ -265,14 +265,14 @@ __device__ void pool_init(std::size_t total_bytes) {
         // rounds down each pool size to neareast multiple of 8
         // potentially wastes 7 bytes per pool
         // these wasted bytes sit at the end of all pools
-        
+
         if (bytes_per_thread > 0xFFFF){ //only happens if very low number of threads
             bytes_per_thread = DEFAULT_OFFSET; // = 0xFFFF
         }
     } else {
         //something went really wrong
     }
-    
+
     // Thread 0 -> initialize pool managers (global variable essentially)
     if (threadIdx.x == 0) {
         pool_manager->shared_memory_start = shared_mem_ptr;
@@ -282,25 +282,25 @@ __device__ void pool_init(std::size_t total_bytes) {
     // All active threads (0-31) initialize their own pool
     if (threadIdx.x < MAX_THREADS) {
         int i = threadIdx.x;
-        
+
         // Calculate bounds for this specific thread
         std::byte* start = shared_mem_ptr + manager_struct_size + (i * bytes_per_thread);
         std::byte* end   = start + bytes_per_thread;
-        
+
         pool_manager->pool_starts[i] = start;
         pool_manager->pool_ends[i]   = end;
 
         size_t overhead = HEADER_SIZE + FOOTER_SIZE;
-        
+
         if (total_bytes > manager_struct_size && bytes_per_thread >= overhead) {
             size_t payload_size = bytes_per_thread - overhead;
-            
+
             BlockHeader* header = reinterpret_cast<BlockHeader*>(start);
             header->bits.free = 1;
             header->bits.size = payload_size;
             header->bits.next = DEFAULT_OFFSET;
             header->bits.prev = DEFAULT_OFFSET;
-            
+
             BlockFooter* footer = footer_from_head(header);
             footer->header = header;
 
@@ -321,13 +321,13 @@ __device__ void* pmalloc_best_fit(std::size_t size) {
 
     std::byte* shared_mem_ptr = get_shared_heap_base();
     pool_managers* pool_manager = reinterpret_cast<pool_managers*>(shared_mem_ptr);
-    
+
     // Thread ID = Pool ID
     int pool_id = threadIdx.x;
 
     size_t aligned_size = align_up(size);
     std::byte* pool_start = pool_manager->pool_starts[pool_id];
-    
+
 
     BlockHeader* best_fit = nullptr;
     BlockHeader* curr = pool_manager->free_heads[pool_id];
@@ -380,7 +380,7 @@ __device__ void* pmalloc(std::size_t size) {
     BlockHeader* h_ptr = pool_manager->free_heads[pool_id];
     if (h_ptr == nullptr) return nullptr; // throw error in future
     if (block_total_size(h_ptr) < align_up(HEADER_SIZE + size + FOOTER_SIZE)){
-        return nullptr; 
+        return nullptr;
     }
 
     free_list_remove(&(pool_manager->free_heads[pool_id]), h_ptr, pool_start);
@@ -408,22 +408,22 @@ __device__ void pfree(void* user_ptr) {
 
     std::byte* shared_mem_ptr = get_shared_heap_base();
     pool_managers* pool_manager = reinterpret_cast<pool_managers*>(shared_mem_ptr);
-    
+
     //keeping pool_idx variable because maybe we use multidimensional threads in future
     //only 1-D blocks for now
     // threadIdx.x + (threadIdx.y * blockDim.x) + (threadIdx.z * blockDim.x * blockDim.y)
-    int pool_idx = threadIdx.x; 
+    int pool_idx = threadIdx.x;
     std::byte* pool_start = pool_manager->pool_starts[pool_idx];
     std::byte* pool_end = pool_manager->pool_ends[pool_idx];
-    
+
 
 
     BlockHeader* h_ptr = header_from_user(user_ptr);
-    
+
     h_ptr->bits.free = 1;
     h_ptr->bits.prev = DEFAULT_OFFSET;
     h_ptr->bits.next = DEFAULT_OFFSET;
-    
+
     // passing in a pointer to the free head ptrs
     // pool end is needed for bounds checking when coalescing right
     BlockHeader* merged = coalesce(&(pool_manager->free_heads[pool_idx]), h_ptr, pool_start, pool_end);

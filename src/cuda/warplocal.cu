@@ -10,12 +10,12 @@ namespace warp_pool {
 
 // static constexpr int WARP_SIZE = 32;
 static constexpr int MAX_POOLS = 32;
-static constexpr size_t ALIGNMENT = 8; 
+static constexpr size_t ALIGNMENT = 8;
 static constexpr uint16_t DEFAULT_OFFSET = 0xFFFF;
-static constexpr size_t HEADER_SIZE = sizeof(uint64_t); 
+static constexpr size_t HEADER_SIZE = sizeof(uint64_t);
 static constexpr size_t FOOTER_SIZE = sizeof(void*);
 
-struct BlockHeader; 
+struct BlockHeader;
 struct BlockFooter;
 
 struct BlockFooter {
@@ -38,13 +38,13 @@ struct alignas(8) BlockHeader {
 
 struct pool_managers {
     std::byte*   shared_memory_start;
-    int          threads_per_pool;           // 
+    int          threads_per_pool;           //
     int          num_pools;
     int          shared_memory_size;         // in bytes
-    int          spinlocks[MAX_POOLS];       // Spinlocks 
-    BlockHeader* free_heads[MAX_POOLS];      // Free list heads 
-    std::byte*   pool_starts[MAX_POOLS];     // bound checking  
-    std::byte*   pool_ends[MAX_POOLS];         
+    int          spinlocks[MAX_POOLS];       // Spinlocks
+    BlockHeader* free_heads[MAX_POOLS];      // Free list heads
+    std::byte*   pool_starts[MAX_POOLS];     // bound checking
+    std::byte*   pool_ends[MAX_POOLS];
 };
 
 
@@ -165,7 +165,7 @@ __device__ inline void free_list_insert(BlockHeader** free_heads, BlockHeader* h
 
 __device__ inline void free_list_remove(BlockHeader** free_heads, BlockHeader* h_ptr, std::byte* pool_start) {
     if (h_ptr == nullptr) return;
-    
+
     BlockHeader* prev = get_prev_node(h_ptr, pool_start);
     BlockHeader* next = get_next_node(h_ptr, pool_start);
 
@@ -173,7 +173,7 @@ __device__ inline void free_list_remove(BlockHeader** free_heads, BlockHeader* h
         prev->bits.next = h_ptr->bits.next;
     } else {
         // removing head
-        *free_heads = next; 
+        *free_heads = next;
     }
 
     if (next != nullptr) {
@@ -182,7 +182,7 @@ __device__ inline void free_list_remove(BlockHeader** free_heads, BlockHeader* h
 
     h_ptr->bits.prev = DEFAULT_OFFSET;
     h_ptr->bits.next = DEFAULT_OFFSET;
-    h_ptr->bits.free = 0; 
+    h_ptr->bits.free = 0;
 }
 
 // -------------------------------------------------------------------------
@@ -196,7 +196,7 @@ __device__ inline BlockHeader* split_block(BlockHeader** free_heads, BlockHeader
     // total_to_use must be multiple of ALIGNMENT to keep next header aligned
     size_t total_to_use = HEADER_SIZE + requested_size + FOOTER_SIZE;
     total_to_use = align_up(total_to_use);
-    
+
     if (total_to_use > original_total) total_to_use = original_total;
 
     // derive aligned payload for used piece
@@ -212,14 +212,14 @@ __device__ inline BlockHeader* split_block(BlockHeader** free_heads, BlockHeader
     if (remain_total >= MIN_TOTAL_SPLIT) {
         std::byte* rem_start = reinterpret_cast<std::byte*>(h_ptr) + total_to_use;
         BlockHeader* r = reinterpret_cast<BlockHeader*>(rem_start);
-        
+
         r->bits.size = remain_total - HEADER_SIZE - FOOTER_SIZE;
         r->bits.free = 1;
         r->bits.prev = DEFAULT_OFFSET;
         r->bits.next = DEFAULT_OFFSET;
-        
+
         footer_from_head(r)->header = r;
-        
+
         free_list_insert(free_heads, r, pool_start);
     }
     return h_ptr;
@@ -231,10 +231,10 @@ __device__ inline BlockHeader* coalesce(BlockHeader** head_ptr, BlockHeader* h, 
         BlockHeader* L = left_neighbors_header(h, pool_start);
         if (L != nullptr && L->bits.free) {
             free_list_remove(head_ptr, L, pool_start);
-            
+
             size_t new_total = block_total_size(L) + block_total_size(h);
             L->bits.size = new_total - HEADER_SIZE - FOOTER_SIZE;
-            
+
             footer_from_head(L)->header = L;
             h = L;
         } else {
@@ -246,10 +246,10 @@ __device__ inline BlockHeader* coalesce(BlockHeader** head_ptr, BlockHeader* h, 
         BlockHeader* R = right_neighbors_header(h, pool_end);
         if (R != nullptr && R->bits.free) {
             free_list_remove(head_ptr, R, pool_start);
-            
+
             size_t new_total = block_total_size(h) + block_total_size(R);
             h->bits.size = new_total - HEADER_SIZE - FOOTER_SIZE;
-            
+
             footer_from_head(h)->header = h;
         } else {
             break;
@@ -296,9 +296,9 @@ __device__ void pool_init(std::size_t total_bytes, int threads_per_pool) {
     pool_managers* pool_manager = reinterpret_cast<pool_managers*>(shared_mem_ptr);
     size_t manager_struct_size = align_up(sizeof(pool_managers));
 
-    
 
-    
+
+
 
     int num_pools = (blockDim.x + threads_per_pool - 1) / threads_per_pool;
 
@@ -334,28 +334,28 @@ __device__ void pool_init(std::size_t total_bytes, int threads_per_pool) {
     // 2. First Warp (Threads 0-31): Initialize Pools in Parallel
     if (threadIdx.x < num_pools) {
         int i = threadIdx.x;
-        
+
         pool_manager->spinlocks[i] = 0;
-        
+
         // Calculate bounds for this specific warp
         std::byte* start = shared_mem_ptr + manager_struct_size + (i * bytes_per_warp);
         std::byte* end   = start + bytes_per_warp;
-        
+
         pool_manager->pool_starts[i] = start;
         pool_manager->pool_ends[i]   = end;
 
         size_t overhead = HEADER_SIZE + FOOTER_SIZE;
-        
+
         // Only setup the pool if we have enough memory
         if (total_bytes > manager_struct_size && bytes_per_warp >= overhead) {
             size_t payload_size = bytes_per_warp - overhead;
-            
+
             BlockHeader* header = reinterpret_cast<BlockHeader*>(start);
             header->bits.free = 1;
             header->bits.size = payload_size;
             header->bits.next = DEFAULT_OFFSET;
             header->bits.prev = DEFAULT_OFFSET;
-            
+
             BlockFooter* footer = footer_from_head(header);
             footer->header = header;
 
@@ -371,7 +371,7 @@ __device__ void pool_init(std::size_t total_bytes, int threads_per_pool) {
 
 __device__ void* pmalloc(std::size_t size) {
     int pool_id = get_pool_id();
-    
+
 
 
     std::byte* shared_mem_ptr = get_shared_heap_base();
@@ -388,7 +388,7 @@ __device__ void* pmalloc(std::size_t size) {
     void* result = nullptr;
 
     BlockHeader* h_ptr = pool_manager->free_heads[pool_id];
-    
+
     if (h_ptr != nullptr && block_total_size(h_ptr) >= align_up(HEADER_SIZE + size + FOOTER_SIZE)) {
         free_list_remove(&(pool_manager->free_heads[pool_id]), h_ptr, pool_start);
 
@@ -467,9 +467,9 @@ __device__ void* pmalloc_best_fit(std::size_t size) {
 
 __device__ void pfree(void* ptr) {
     if (ptr == nullptr) return;
-    
+
     int pool_id = get_pool_id();
-    
+
 
     std::byte* shared_mem_ptr = get_shared_heap_base();
     pool_managers* pool_manager = reinterpret_cast<pool_managers*>(shared_mem_ptr);
@@ -484,11 +484,11 @@ __device__ void pfree(void* ptr) {
     acquire_lock(&pool_manager->spinlocks[pool_id]);
 
     BlockHeader* h_ptr = header_from_user(ptr);
-    
+
     h_ptr->bits.free = 1;
     h_ptr->bits.prev = DEFAULT_OFFSET;
     h_ptr->bits.next = DEFAULT_OFFSET;
-    
+
     BlockHeader* merged = coalesce(&(pool_manager->free_heads[pool_id]), h_ptr, pool_start, pool_end);
     free_list_insert(&(pool_manager->free_heads[pool_id]), merged, pool_start);
 

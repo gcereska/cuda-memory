@@ -1,6 +1,9 @@
-#pragma once 
+#pragma once
 
+// base
 #include <configure.h>
+
+namespace cumem {
 
 /*!
  * \brief Solves the set of n linear equations A.X = B.
@@ -16,25 +19,34 @@
  * \param[in] indx[0..n-1] input the permutation vector returned by ludcmp.
  * \param[in] n size of matrix
  */
-
-template<typename T>
-DISPATCH_MACRO void lubksb(T *b, T const *a, int const *indx, int n) {
-  int i, ii = 0, ip, j;
+template <typename T>
+DISPATCH_MACRO void lubksb(T *b, T const *a, int const *indx, int n,
+                           int *skip_row = nullptr) {
+  int i, ip, j;
+  int ii = -1;
   T sum;
 
-  for (i = 0; i < n; i++) {
+  // Forward substitution
+  for (i = 0; i < n; ++i) {
+    if (skip_row && skip_row[i]) continue;
     ip = indx[i];
     sum = b[ip];
     b[ip] = b[i];
-    if (ii)
-      for (j = ii - 1; j < i; j++) sum -= a[i*n + j] * b[j];
-    else if (sum)
-      ii = i + 1;
+    if (ii >= 0) {
+      for (j = ii; j <= i - 1; ++j) sum -= a[i * n + j] * b[j];
+    } else if (sum != (T)0) {
+      ii = i;  // first nonzero RHS row
+    }
     b[i] = sum;
   }
-  for (i = n - 1; i >= 0; i--) {
+
+  // Back substitution
+  for (i = n - 1; i >= 0; --i) {
+    if (skip_row && skip_row[i]) continue;
     sum = b[i];
-    for (j = i + 1; j < n; j++) sum -= a[i*n + j] * b[j];
-    b[i] = sum / a[i*n + i];
+    for (j = i + 1; j < n; ++j) sum -= a[i * n + j] * b[j];
+    b[i] = sum / a[i * n + i];
   }
 }
+
+}  // namespace cumem

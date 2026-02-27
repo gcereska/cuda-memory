@@ -1,6 +1,6 @@
 cd "...\cuda-memory"
 
-// debug build setup 
+// debug build setup
 cmake -S . -B build -LAH
 cmake -S . -B build --log-level=STATUS
 
@@ -12,7 +12,7 @@ cmake -S . -B build
 cmake -S . -B build-debug -DCMAKE_BUILD_TYPE=Debug
 
 // to build/rebuild
-cmake --build build 
+cmake --build build
 
 // debug build/rebuild
 cmake --build debug
@@ -23,8 +23,8 @@ cmake --build debug
 // cmake -S . -B build -DCMAKE_CUDA_ARCHITECTURES="89"          for rtx 4090 architecture
 
 
-// to run tests on windows // cmake is inherently different and decides to make seperate folder for release and debug on windows and only windows 
-.\build\tests\Release\allocator_test.exe 
+// to run tests on windows // cmake is inherently different and decides to make seperate folder for release and debug on windows and only windows
+.\build\tests\Release\allocator_test.exe
 .\build\tests\Release\fuzzy-test-gpu.exe -s 67
 // -s is to indicate rng seed
 
@@ -39,7 +39,7 @@ cmake --build debug
 ./build/tests/testInvalidDeletion
 ./build/tests/testLightFragmentation
 ./build/tests/testRigorousFragmentation
-  
+
 ./build/tests/allocator_bench_all
 
 ./build/tests/benchmark_all
@@ -73,7 +73,7 @@ cmake -B build -DUSE_WARP_LOCAL
 cmake -B build -DUSE_FREELIST_ALLOCATOR
 cmake -B build -DUSE_BST_ALLOCATOR
 
-// WARP LOCAL MULTIPLE THREADS PER POOL 
+// WARP LOCAL MULTIPLE THREADS PER POOL
 // CAPPED TO 32 POOLS
 warp_pool::pool_init(bytes)        // 1 thread per pool
 warp_pool::pool_init(bytes, 4)     // 4 threads per pool

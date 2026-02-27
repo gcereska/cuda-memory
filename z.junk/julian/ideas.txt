@@ -1,6 +1,0 @@
- - give each thread a reference to a memPool struct
-    - when they want to do malloc or free, pass the ref so the func knows what freelist to use as well as what block of memory is for that thread   
-
- - each thread should be able to init their own blocks in parallel? it should be possible to calculate the size they get and multiply it by the thread idx and pass that as args to init
-    - init returns that memPoll ref as discussed earlier
-

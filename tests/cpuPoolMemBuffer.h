@@ -1,9 +1,8 @@
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #ifndef BLOCK_H
 #define BLOCK_H
-
 
 /*
 
@@ -16,7 +15,7 @@ typedef struct {
 
     // this can be any number of bits >= 12,
     // iff the size of each threads buffer is < 4KB
-    uint64_t size           : 14; 
+    uint64_t size           : 14;
 
     int64_t leftOffset      : 16;
     int64_t rightOffset     : 16;
@@ -39,22 +38,21 @@ typedef struct {
 // } BlockHeader;
 
 typedef struct {
+  int16_t fullSize;
 
-    int16_t fullSize;
+  int16_t nextOffset;
+  int16_t prevOffset;
 
-    int16_t nextOffset;
-    int16_t prevOffset;
-
-    int16_t padding;
+  int16_t padding;
 
 } BlockHeader;
 
 typedef struct {
+  /*while 6 byte accesses are bad, 2 bytes should be ok because they will still
+  be fully accessed in one word. I will prob pad the size to align the total
+  allocation to 4 bytes however*/
 
-    /*while 6 byte accesses are bad, 2 bytes should be ok because they will still be fully accessed in one word. 
-    I will prob pad the size to align the total allocation to 4 bytes however*/
-    
-    int16_t headerOffset;
+  int16_t headerOffset;
 } BlockFooter;
 
 #endif

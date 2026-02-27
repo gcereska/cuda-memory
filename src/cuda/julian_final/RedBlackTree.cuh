@@ -110,7 +110,7 @@ private:
     __device__ void fixDelete(RBTreeBlockHeader* node)
     {
         if (node == nullptr) return;
-        
+
         while (node != root && node->color() == BLACK) {
             if (node == node->parentHeader()->leftHeader()) {
                 RBTreeBlockHeader* sibling = node->parentHeader()->rightHeader();
@@ -220,7 +220,7 @@ public:
 
         RBTreeBlockHeader* parent = nullptr;
         RBTreeBlockHeader* current = root;
-        
+
         // Find the insertion point
         while (current != nullptr) {
             parent = current;
@@ -229,7 +229,7 @@ public:
             else
                 current = current->rightHeader();
         }
-        
+
         node->set_parent_offset(parent);
         if (parent == nullptr)
             root = node;
@@ -237,7 +237,7 @@ public:
             parent->set_left_offset(node);
         else
             parent->set_right_offset(node);
-        
+
         fixInsert(node);
     }
 
@@ -246,7 +246,7 @@ public:
     {
         RBTreeBlockHeader* node = root;
         RBTreeBlockHeader* z = nullptr;
-        
+
         // Find the node with the target size
         while (node != nullptr) {
             if (node->size() == targetSize) {
@@ -268,7 +268,7 @@ public:
         RBTreeBlockHeader* y = z;
         Color yOriginalColor = y->color();
         RBTreeBlockHeader* x = nullptr;
-        
+
         if (z->leftHeader() == nullptr) {
             x = z->rightHeader();
             transplant(z, z->rightHeader());
@@ -295,11 +295,11 @@ public:
             y->leftHeader()->set_parent_offset(y);
             y->setColor(z->color());
         }
-        
+
         if (yOriginalColor == BLACK) {
             fixDelete(x);
         }
-        
+
         return z; // Return the removed node
     }
 
@@ -308,7 +308,7 @@ public:
     {
         RBTreeBlockHeader* current = root;
         RBTreeBlockHeader* bestFit = nullptr;
-        
+
         while (current != nullptr) {
             if (current->size() >= requestedSize) {
                 // This node could work, but check if there's a better fit
@@ -319,7 +319,7 @@ public:
                 current = current->rightHeader(); // Need larger blocks
             }
         }
-        
+
         return bestFit;
     }
 

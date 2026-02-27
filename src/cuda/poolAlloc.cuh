@@ -1,10 +1,9 @@
-#ifndef POOLALLOC_CUH
-#define POOLALLOC_CUH
+#pragma once
 
 #include "typeDefs.cuh"
 
 
-namespace pmalloc_freelist {
+namespace list_pool {
 
     struct MemBufferStorage {
         unsigned char* memBuffer;
@@ -12,11 +11,11 @@ namespace pmalloc_freelist {
         BlockHeader* fullList;
     };
 
-    __device__ void init_gpu_buffer(uint sharedMemSize);
+    __device__ void pool_init(uint sharedMemSize);
 
-    __device__ void *cmalloc(unsigned long size);
+    __device__ void *pmalloc(unsigned long size);
 
-    __device__ void cfree(void *ptr);
+    __device__ void pfree(void *ptr);
 
 
     __device__ void debug_print_buffer();
@@ -32,5 +31,3 @@ namespace pmalloc_freelist {
 // __device__ int dataBytes(BlockHeader *head);
 
 // __device__ int headerBytes(BlockHeader *head);
-
-#endif

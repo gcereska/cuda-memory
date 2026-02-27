@@ -7,8 +7,8 @@ enable_testing()
 
 add_executable(allocator_bench_all allocator_bench_all.cpp)
 
-target_link_libraries(allocator_bench_all 
-  PRIVATE 
+target_link_libraries(allocator_bench_all
+  PRIVATE
   ${PROJECT_NAME}::${PROJECT_NAME}
 )
 
@@ -23,9 +23,9 @@ set(CPU_C_TESTS
 
 foreach(t ${CPU_C_TESTS})
   add_executable(${t} ${t}.c)
-  
-  target_link_libraries(${t} 
-    PRIVATE 
+
+  target_link_libraries(${t}
+    PRIVATE
     ${PROJECT_NAME}::${PROJECT_NAME}
   )
 
@@ -34,7 +34,7 @@ foreach(t ${CPU_C_TESTS})
 endforeach()
 
 
-if (USE_CUDA)
+if (CUDA)
   file(GLOB CUDA_TESTS "*.cu")
 
 

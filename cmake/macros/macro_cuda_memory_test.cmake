@@ -15,7 +15,7 @@ macro(cuda_memory_test namel)
     PROPERTIES CUDA_SEPARABLE_COMPILATION ON
   )
 
-  target_compile_options(${namel} PRIVATE 
+  target_compile_options(${namel} PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>:-diag-suppress=177,550,127>
   )
 
@@ -31,11 +31,10 @@ macro(cuda_memory_test namel)
             ${TORCH_LIBRARY}
             ${TORCH_CPU_LIBRARY}
             ${C10_LIBRARY}
-            $<IF:$<BOOL:${USE_CUDA}>,${PROJECT_NAME}::${PROJECT_NAME}_cu,>
-            $<IF:$<BOOL:${USE_CUDA}>,${TORCH_CUDA_LIBRARY},>
-            $<IF:$<BOOL:${USE_CUDA}>,${C10_CUDA_LIBRARY},>
+            $<IF:$<BOOL:${CUDA}>,${PROJECT_NAME}::${PROJECT_NAME}_cu,>
+            $<IF:$<BOOL:${CUDA}>,${TORCH_CUDA_LIBRARY},>
+            $<IF:$<BOOL:${CUDA}>,${C10_CUDA_LIBRARY},>
   )
 
   add_test(NAME ${namel} COMMAND ${namel})
 endmacro()
-

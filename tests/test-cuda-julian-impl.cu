@@ -1,29 +1,22 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
 
-#include "poolAlloc.cuh"
-#include "poolAllocBST.cuh"
-
-#if defined(USE_BST_ALLOCATOR)
-    namespace pool = pmalloc_bst;
-#else
-    namespace pool = pmalloc_freelist;
-#endif
+#include <cumem/blueprint.h>
 
 __global__ void allocate_and_write(int **ptrs, int n, uint sharedMemSize) {
     unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
     // poolinit(poolMemoryBlock, idx);
     printf("entering kernel correctly\n");
-    pool::init_gpu_buffer(sharedMemSize);
+    pool_init(sharedMemSize);
     printf("init buffer correctly\n");
 
     if(idx == 0){
-        pool::debug_print_buffer();
+        //pool::debug_print_buffer();
     }
 
     if (idx < n) {
 
-        int *mem = (int*)pool::cmalloc(4 * sizeof(int));
+        int *mem = (int*)pmalloc(4 * sizeof(int));
 
         printf("thread: %d, mem pointer: %p\n",idx, mem);
 
@@ -37,7 +30,7 @@ __global__ void allocate_and_write(int **ptrs, int n, uint sharedMemSize) {
         }
 
         if(idx == 0){
-            pool::debug_print_buffer();
+            //pool::debug_print_buffer();
         }
 
         printf("Thread %d: ", idx);
@@ -45,17 +38,17 @@ __global__ void allocate_and_write(int **ptrs, int n, uint sharedMemSize) {
             printf("%d ", mem[i]);
         }
         printf("\n");
-        pool::cfree(mem);
+        pfree(mem);
     }
 
     if(idx == 0){
-        pool::debug_print_buffer();
+        //pool::debug_print_buffer();
     }
 
     // if (idx < n && ptrs[idx] != NULL) {
-        
+
     // }
-    
+
 }
 
 //attempting to access the same piece of shared memory across multiple kernels is illegal and will result in undefined behaviors
@@ -90,7 +83,7 @@ int main() {
 
     // read_and_free<<<1, n, sharedMemSize>>>(d_ptrs, n);
     cudaDeviceSynchronize();
-    
+
     printf("post read & free\n");
 
 

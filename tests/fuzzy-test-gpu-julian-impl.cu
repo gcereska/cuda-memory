@@ -4,18 +4,10 @@
 #include <getopt.h>
 #include <assert.h>
 
-#include "poolAlloc.cuh"
-#include "poolAllocBST.cuh"
-
-#if defined(USE_BST_ALLOCATOR)
-    namespace pool = pmalloc_bst;
-#else
-    namespace pool = pmalloc_freelist;
-#endif
+#include <cumem/blueprint.h>
 
 #define NUM_THREADS 64
 #define OPS_PER_THREAD 30
-
 
 struct TestOperation {
     bool isAlloc;
@@ -56,11 +48,11 @@ __global__ void runTests(TestOperation *ops, uint sharedMemSize) {
     // #ifdef USE_MEMORY_POOL
     // poolinit(poolMemoryBlock, idx);
     // #endif
-    pool::init_gpu_buffer(sharedMemSize);
+    pool_init(sharedMemSize);
 
 
     if(idx == 0){
-        pool::debug_print_buffer();
+        //pool_type::debug_print_buffer();
     }
 
     __syncthreads();
@@ -71,7 +63,7 @@ __global__ void runTests(TestOperation *ops, uint sharedMemSize) {
         unsigned int opIndex = idx * OPS_PER_THREAD + i;
         if (ops[opIndex].isAlloc) {
 
-            void *ptr = pool::cmalloc(ops[opIndex].numBytes);
+            void *ptr = pmalloc(ops[opIndex].numBytes);
             allocatedPtrs[i] = ptr;
             for (unsigned long j = 0; j < ops[opIndex].numBytes; j++) {
                 ((char*)ptr)[j] = 'a';
@@ -85,7 +77,7 @@ __global__ void runTests(TestOperation *ops, uint sharedMemSize) {
                     assert(ptrToFree[j] == 'a');
                 }
             }
-            pool::cfree(ptrToFree);
+            pfree(ptrToFree);
             printf("Thread %d: Freed allocation at index %d\n", idx, ops[opIndex].corrospondingAlloc);
         }
 
@@ -132,7 +124,7 @@ int main(int argc, char **argv) {
             //        ops[idx].corrospondingAlloc);
         }
     }
-    
+
     TestOperation *d_ops;
     cudaMalloc(&d_ops, sizeof(TestOperation) * NUM_THREADS * OPS_PER_THREAD);
     cudaMemcpy(d_ops, ops, sizeof(TestOperation) * NUM_THREADS * OPS_PER_THREAD, cudaMemcpyHostToDevice);

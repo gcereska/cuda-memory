@@ -1,44 +1,42 @@
-#include <stdio.h>
 #include <printf.h>
+#include <stdio.h>
 
 #include "cpuPoolMalloc.h"
 
-int main()
-{
+int main() {
+  // printf("program starts\n");
 
-    // printf("program starts\n");
+  init_cpu_buffer();
 
-    init_cpu_buffer();
+  printf("init complete\n");
 
-    printf("init complete\n");
+  void *small_test = cmalloc(128);
 
-    void *small_test = cmalloc(128);
+  debug_print_buffer();
 
-    debug_print_buffer();
+  void *med_test = cmalloc(512);
 
-    void *med_test = cmalloc(512);
+  debug_print_buffer();
 
-    debug_print_buffer();
+  void *large_test = cmalloc(1028);
 
-    void *large_test = cmalloc(1028);
+  debug_print_buffer();
 
-    debug_print_buffer();
+  printf("-----------------------------\n");
 
-    printf("-----------------------------\n");
+  cfree((char *)med_test + 4);
 
-    cfree((char*)med_test + 4);
+  debug_print_buffer();
+  debug_print_free_list();
 
-    debug_print_buffer();
-    debug_print_free_list();
+  cfree(large_test);
 
-    cfree(large_test);
+  debug_print_buffer();
 
-    debug_print_buffer();
+  cfree(small_test);
 
-    cfree(small_test);
+  debug_print_buffer();
 
-    debug_print_buffer();
-
-    free_buffer();
-    return 0;
+  free_buffer();
+  return 0;
 }

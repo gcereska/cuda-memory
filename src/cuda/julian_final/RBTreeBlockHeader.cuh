@@ -5,7 +5,7 @@ enum Color : uint8_t { RED, BLACK };
 
 class RBTreeBlockHeader {
     /*
-    first bit will be full status, second bit will be color 
+    first bit will be full status, second bit will be color
     typedef struct{
         int16_t fullStatus : 1
         int16_t color : 1
@@ -22,7 +22,7 @@ class RBTreeBlockHeader {
     public:
 
         __device__ RBTreeBlockHeader(int16_t fullSize,int16_t leftOffset, int16_t rightOffset, int16_t parentOffset)
-            :fullSize(fullSize), leftOffset(leftOffset),rightOffset(rightOffset),parentOffset(parentOffset){}  
+            :fullSize(fullSize), leftOffset(leftOffset),rightOffset(rightOffset),parentOffset(parentOffset){}
 
         __device__ int16_t size() {
             return fullSize & 0x3FFF;
@@ -57,7 +57,7 @@ class RBTreeBlockHeader {
             fullSize = (fullSize & 0xC000) | (s & 0x3FFF);
         }
 
-        __device__ int16_t calculateOffset(unsigned char* to) { 
+        __device__ int16_t calculateOffset(unsigned char* to) {
             return to - (unsigned char*)this;
         }
 
@@ -85,7 +85,7 @@ class RBTreeBlockHeader {
             uint threadIndex = get_linear_thread_index();
 
             if((void*)this == (void*)memPools[threadIndex].base() ){
-                return NULL; 
+                return NULL;
             }
 
             RBTreeBlockHeader* prevHeader = prevFooter()->RBTreeheader();
@@ -95,14 +95,14 @@ class RBTreeBlockHeader {
 
         __device__ RBTreeBlockHeader* debugNextHeader(){
             uint threadIndex = get_linear_thread_index();
-            uint threadPoolSize = get_thread_pool_size(); 
-            
+            uint threadPoolSize = get_thread_pool_size();
+
             int currentHeaderOffset = calculateOffset(memPools[threadIndex].base());
 
             if((currentHeaderOffset + size() + sizeof(RBTreeBlockHeader) + sizeof(BlockFooter)) >= threadPoolSize){
                 return NULL;
             }
-            
+
             return (RBTreeBlockHeader*)((unsigned char*)this + size() + sizeof(BlockFooter) + sizeof(RBTreeBlockHeader));
         }
 

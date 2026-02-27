@@ -28,7 +28,7 @@ The project provides:
 
 ```bash
 # Configure and build
-cmake -B build 
+cmake -B build
 cmake --build build -j
 
 # Run the benchmark (1000 iterations per allocator)
@@ -86,8 +86,7 @@ Edit the `TARGETS` array at the top of the script to choose which test to run (e
 |---|---|---|
 | `CMAKE_BUILD_TYPE` | `Release` | `Release` or `Debug` |
 | `CMAKE_CUDA_ARCHITECTURES` | `"75 80 86 89"` | Target GPU architectures |
-| `USE_CUDA` | `ON` | Build with CUDA support |
-| `USE_TORCH` | `ON` | Build with PyTorch/LibTorch support |
+| `CUDA` | `ON` | Build with CUDA support |
 | `BUILD_TESTS` | `ON` | Build test and benchmark executables |
 | `BUILD_EXAMPLES` | `OFF` | Build example programs |
 
@@ -133,7 +132,7 @@ target_compile_definitions(my_target PRIVATE USE_WARP_LOCAL_BEST_FIT)
 
 **Files:** `src/cuda/threadlocal.cu`, `src/include/allocator.cuh`
 
-Each thread gets its own private memory pool carved from shared memory. 
+Each thread gets its own private memory pool carved from shared memory.
 
 **How it works:**
 - Shared memory is divided equally among 32 threads (1 pool per thread)
@@ -326,7 +325,7 @@ Without the `cudaFuncSetAttribute` call, launching with more than `sharedMemPerB
 
 ## Usage Patterns
 
-### Macro Interface 
+### Macro Interface
 
 The macro interface lets you select an allocator at compile time and the macros route `pool_init`, `pmalloc`, and `pfree` to the right implementation:
 
@@ -459,4 +458,3 @@ If you want to add a new allocator to this project:
 - To add new tests you have to manually add them to the Cmake GLOBs.
 
 ---
-
