@@ -177,9 +177,7 @@ __device__ void find_insert_position(RBTreeBlockHeader** root, int16_t new_size,
     *out_dir = dir;
 }
 
-// Example usage of find_insert_position with your existing insert function:
 __device__ void insert_node(RBTreeBlockHeader** root, RBTreeBlockHeader* new_node, int16_t size) {
-    // Set the size in the node (preserving any existing flags)
     new_node->fullSize = (new_node->fullSize & 0xC000) | (size & 0x3FFF);
     
     // Initialize offsets to 0 (no children)
@@ -194,7 +192,6 @@ __device__ void insert_node(RBTreeBlockHeader** root, RBTreeBlockHeader* new_nod
 
     find_insert_position(root, size, &parent, &dir);
     
-    // Use your existing insert function to insert and rebalance
     insert(root, new_node, parent, dir);
 }
 

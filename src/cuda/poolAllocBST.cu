@@ -336,16 +336,17 @@ __device__ void* cmalloc(unsigned long size){
     uint threadIndex = get_linear_thread_index();
 
     if(&memPools[threadIndex].freeList == NULL || get_node_size(memPools[threadIndex].freeList) < (size + (int16_t)sizeof(RBTreeBlockHeader) + (int16_t)sizeof(BlockFooter))){
-        // if(threadIndex == 0){
-        //     printf("malloc eval null exit\n");
+        if(threadIndex == 0){
+            // printf("malloc eval null exit\n");
 
-        // }
+        }
         return NULL;
     }
 
-    // if(threadIndex == 0){
-    //     printf("not failing?\n");
-    // }
+    if(threadIndex == 0){
+        // printf("not failing?\n");
+
+    }
 
     uint16_t preAllocationSize = get_node_size(memPools[threadIndex].freeList);
     RBTreeBlockHeader* newlyAllocatedHeader = memPools[threadIndex].freeList;
