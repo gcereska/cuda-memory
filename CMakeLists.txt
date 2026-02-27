@@ -28,7 +28,7 @@ endif()
 option(USE_THREAD_LOCAL_BEST_FIT "Use Thread Local Best Fit allocator" OFF)
 option(USE_WARP_LOCAL_BEST_FIT   "Use Warp Local Best Fit allocator" OFF)
 option(USE_THREAD_LOCAL          "Use Thread Local First Fit allocator" OFF)
-option(USE_WARP_LOCAL            "Use Warp Local First Fit allocator" OFF)
+option(USE_WARP_LOCAL            "Use Warp Local First Fit allocator" ON)
 option(USE_FREELIST_ALLOCATOR    "Use Freelist allocator" OFF)
 option(USE_BST_ALLOCATOR         "Use BST allocator" OFF)
 

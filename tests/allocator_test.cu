@@ -4,16 +4,7 @@
 #include <cstdint>
 #include <cassert>
 
-#include "allocator.cuh"
-//#include <src/cuda/allocator.cuh>
-
-#if defined(USE_THREAD_LOCAL)
-    namespace pool = thread_pool;
-#else
-    namespace pool = warp_pool;
-#endif
-
-using namespace pool;
+#include <cumem/blueprint.h>
 
 // Test configuration
 static constexpr size_t SHARED_MEM_SIZE = 32 * 1024;  // 32 KB (safe under 48 KB limit)
@@ -867,7 +858,7 @@ __global__ void test_best_fit() {
     pfree(c);  // 128-byte hole
     
     // Best fit should find the 32-byte hole for a 24-byte request
-    void* best = pmalloc_best_fit(24);
+    void* best = pool_type::pmalloc_best_fit(24);
     
     if (best) {
         verify_memory_writable(best, 24);

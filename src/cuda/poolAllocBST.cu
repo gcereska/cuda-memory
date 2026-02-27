@@ -11,7 +11,7 @@
 #include "RBTree.cuh"
 #include "poolAllocBST.cuh"
 
-namespace pmalloc_bst {
+namespace bst_pool {
 
 // #define GPU_MEM_POOL_SIZE 49152
 
@@ -266,7 +266,7 @@ __device__ void debug_print_full_list(){
 //------------------------------------------------------------------------------------START OF ACTUAL FUNCTIONS FOR MALLOC--------------------------------------------------------------------------------------------
 
 //This function will take in the size of shared mem/#threads
-__device__ void init_gpu_buffer(unsigned int incomingMemSize){
+__device__ void pool_init(unsigned int incomingMemSize){
 
     
 
@@ -329,7 +329,7 @@ __device__ void init_gpu_buffer(unsigned int incomingMemSize){
 
 }
 
-__device__ void* cmalloc(unsigned long size){
+__device__ void* pmalloc(unsigned long size){
 
     uint threadIndex = get_linear_thread_index();
 
@@ -378,7 +378,7 @@ __device__ void* cmalloc(unsigned long size){
     return return_index;
 }
 
-__device__ void cfree(void* addressForDeletion){
+__device__ void pfree(void* addressForDeletion){
     uint threadIndex = get_linear_thread_index();
 
 
@@ -445,6 +445,6 @@ __device__ void cfree(void* addressForDeletion){
     // sort_free_list(threadIndex);
 }
 
-} // namespace pmalloc_bst
+} // namespace bst_pool
 
 //#endif

@@ -1,15 +1,7 @@
 #pragma once
 
-// Whether to use a memory pool for allocation
-// (USE_MEMORY_POOL or NOT_USE_MEMORY_POOL).
-#define @MEMORY_POOL_OPTION@ 
-
 #ifdef __CUDACC__
   #define DISPATCH_MACRO __device__
-  // cumem
-  #include <cumem/allocator.cuh>
-  #define pmalloc thread_pool::pmalloc
-  #define pfree thread_pool::pfree
 #else
   #define DISPATCH_MACRO
   #define pmalloc malloc

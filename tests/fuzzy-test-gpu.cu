@@ -5,15 +5,7 @@
 //#include <getopt.h> im doing the tests on my own windows device
 #include <assert.h>
 
-#include "allocator.cuh"
-//#include <src/cuda/allocator.cuh>
-
-#if defined(USE_THREAD_LOCAL)
-    namespace pool = thread_pool;
-#else
-    namespace pool = warp_pool;
-#endif
-
+#include <cumem/blueprint.h>
 
 #define NUM_THREADS 32 //changed from 128 to 32 // must be 32 exactly 1 thread per warp/pool
 #define OPS_PER_THREAD 30
@@ -67,14 +59,14 @@ __global__ void runTests(TestOperation *ops, size_t shared_mem_size) {
     // #ifdef USE_MEMORY_POOL
     // poolinit(poolMemoryBlock, idx);
     // #endif
-    pool::pool_init(shared_mem_size);
+    pool_init(shared_mem_size);
 
     void *allocatedPtrs[OPS_PER_THREAD];
 
     for (unsigned int i = 0; i < OPS_PER_THREAD; i++) {
         unsigned int opIndex = idx * OPS_PER_THREAD + i;
         if (ops[opIndex].isAlloc) {
-            void *ptr = pool::pmalloc(ops[opIndex].numBytes);
+            void *ptr = pmalloc(ops[opIndex].numBytes);
             allocatedPtrs[i] = ptr;
             for (unsigned long j = 0; j < ops[opIndex].numBytes; j++) {
                 ((char*)ptr)[j] = 'a';
@@ -88,7 +80,7 @@ __global__ void runTests(TestOperation *ops, size_t shared_mem_size) {
                     assert(ptrToFree[j] == 'a');
                 }
             }
-            pool::pfree(ptrToFree);
+            pfree(ptrToFree);
             printf("Thread %d: Freed allocation at index %d\n", idx, ops[opIndex].corrospondingAlloc);
         }
 

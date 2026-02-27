@@ -7,9 +7,9 @@
 #include <unordered_set>
 #include <cstring>
 
-#include "allocator.cuh"
-#include "poolAlloc.cuh"
-#include "poolAllocBST.cuh"
+#include <cumem/cuda/allocator.cuh>
+#include <cumem/cuda/poolAlloc.cuh>
+#include <cumem/cuda/poolAllocBST.cuh>
 
 // ===================== CUDA CHECK =====================
 #define CUDA_CHECK(call) do { \
@@ -60,10 +60,10 @@ __device__ __forceinline__ void init_based_on_g_mode() {
             thread_pool::pool_init(g_dyn_smem_bytes);
             break;
         case MODE_FREELIST:
-            pmalloc_freelist::init_gpu_buffer(g_dyn_smem_bytes);
+            list_pool::pool_init(g_dyn_smem_bytes);
             break;
         case MODE_BST:
-            pmalloc_bst::init_gpu_buffer(g_dyn_smem_bytes);
+            bst_pool::pool_init(g_dyn_smem_bytes);
             break;
         case MODE_WARP_FIRST_FIT:
             warp_pool::pool_init(g_dyn_smem_bytes, g_threads_per_pool);
@@ -81,8 +81,8 @@ __device__ __forceinline__ void* alloc_based_on_g_mode(size_t n) {
     switch (g_mode) {
         case MODE_THREAD_FIRST_FIT:  return thread_pool::pmalloc(n);
         case MODE_THREAD_BEST_FIT:   return thread_pool::pmalloc_best_fit(n);
-        case MODE_FREELIST:          return pmalloc_freelist::cmalloc(n);
-        case MODE_BST:               return pmalloc_bst::cmalloc(n);
+        case MODE_FREELIST:          return list_pool::pmalloc(n);
+        case MODE_BST:               return bst_pool::pmalloc(n);
         case MODE_DEVICE_MALLOC:     return malloc(n);
         case MODE_WARP_BEST_FIT:     return warp_pool::pmalloc_best_fit(n);
         case MODE_WARP_FIRST_FIT:    return warp_pool::pmalloc(n);
@@ -100,10 +100,10 @@ __device__ __forceinline__ void free_based_on_g_mode(void* p) {
             thread_pool::pfree(p);
             break;
         case MODE_FREELIST:
-            pmalloc_freelist::cfree(p);
+            list_pool::pfree(p);
             break;
         case MODE_BST:
-            pmalloc_bst::cfree(p);
+            bst_pool::pfree(p);
             break;
         case MODE_WARP_BEST_FIT:
             warp_pool::pfree(p);
