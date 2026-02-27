@@ -6,8 +6,14 @@
 
 #ifdef __CUDACC__
   #define DISPATCH_MACRO __device__
+  // cumem
+  #include <cumem/allocator.cuh>
+  #define pmalloc thread_pool::pmalloc
+  #define pfree thread_pool::pfree
 #else
   #define DISPATCH_MACRO
+  #define pmalloc malloc
+  #define pfree free
 #endif
 
 #define CPU_MEM_POOL_SIZE @CPU_MEM_POOL_SIZE@

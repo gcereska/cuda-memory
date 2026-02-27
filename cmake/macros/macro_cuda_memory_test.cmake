@@ -31,9 +31,9 @@ macro(cuda_memory_test namel)
             ${TORCH_LIBRARY}
             ${TORCH_CPU_LIBRARY}
             ${C10_LIBRARY}
-            $<IF:$<BOOL:${USE_CUDA}>,${PROJECT_NAME}::${PROJECT_NAME}_cu,>
-            $<IF:$<BOOL:${USE_CUDA}>,${TORCH_CUDA_LIBRARY},>
-            $<IF:$<BOOL:${USE_CUDA}>,${C10_CUDA_LIBRARY},>
+            $<IF:$<BOOL:${CUDA}>,${PROJECT_NAME}::${PROJECT_NAME}_cu,>
+            $<IF:$<BOOL:${CUDA}>,${TORCH_CUDA_LIBRARY},>
+            $<IF:$<BOOL:${CUDA}>,${C10_CUDA_LIBRARY},>
   )
 
   add_test(NAME ${namel} COMMAND ${namel})

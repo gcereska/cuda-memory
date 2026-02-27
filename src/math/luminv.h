@@ -1,8 +1,15 @@
 #pragma once
 
-#include <stdlib.h>
+// C/C++
+#include <cstdlib>
 
+// base
 #include <configure.h>
+
+// cumem
+#include "lubksb.h"
+
+namespace cumem {
 
 /*!
  * \brief invert a matrix, Y = A^{-1}
@@ -18,7 +25,7 @@
  */
 template <typename T>
 DISPATCH_MACRO void luminv(T *y, T const *a, int const *indx, int n) {
-  T *col = (T *)malloc(n * sizeof(T));
+  T *col = (T *)pmalloc(n * sizeof(T));
   for (int j = 0; j < n; j++) {
     for (int i = 0; i < n; i++) col[i] = 0.0;
     col[j] = 1.0;
@@ -27,3 +34,5 @@ DISPATCH_MACRO void luminv(T *y, T const *a, int const *indx, int n) {
   }
   free(col);
 }
+
+}  // namespace cumem

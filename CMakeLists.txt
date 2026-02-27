@@ -10,7 +10,7 @@ set(CMAKE_C_EXTENSIONS OFF)
 
 option(BUILD_EXAMPLES "Build examples" OFF)
 option(BUILD_TESTS "Build tests" ON)
-option(USE_CUDA "Build with CUDA support" ON)
+option(CUDA "Build with CUDA support" ON)
 
 
 project(
@@ -18,6 +18,11 @@ project(
   LANGUAGES CXX C
   DESCRIPTION "Memory Pool Allocator for C/C++ and CUDA"
 )
+
+# Try to enable CUDA
+if (CUDA)
+  enable_language(CUDA)
+endif()
 
 
 option(USE_THREAD_LOCAL_BEST_FIT "Use Thread Local Best Fit allocator" OFF)
@@ -123,66 +128,19 @@ include(${PROJECT_SOURCE_DIR}/cmake/parameters.cmake)
 
 message(STATUS "${Blue}${PROJECT_NAME}-3. Setting up system libraries ...${ColorReset}")
 
-option(USE_TORCH "Build with PyTorch (LibTorch) support" ON)
-
-if (USE_TORCH)
-  # Find Python interpreter
-  find_package(Python3 QUIET COMPONENTS Interpreter)
-  message(STATUS "Python3_EXECUTABLE=${Python3_EXECUTABLE}")
-
-
-  # ask torch where its CMake prefix is
-  if (Python3_Interpreter_FOUND)
-    execute_process(
-      COMMAND "${Python3_EXECUTABLE}" -c
-              "import torch; print(torch.utils.cmake_prefix_path)"
-      RESULT_VARIABLE _TORCH_PREFIX_RC
-      OUTPUT_VARIABLE _TORCH_PREFIX
-      ERROR_VARIABLE  _TORCH_PREFIX_ERR
-      OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-
-    # If that worked and returned a path, add it so find_package(Torch) can succeed
-    if (_TORCH_PREFIX_RC EQUAL 0 AND NOT _TORCH_PREFIX STREQUAL "")
-      list(PREPEND CMAKE_PREFIX_PATH "${_TORCH_PREFIX}")
-      message(STATUS "Torch CMake prefix from Python: ${_TORCH_PREFIX}")
-    else()
-      message(STATUS "Python found but could not query torch CMake prefix (will still try find_package(Torch)).")
-    endif()
-  else()
-    message(STATUS "Python3 not found; cannot query torch prefix (will still try find_package(Torch)).")
-  endif()
-
-  # CMake package discovery
-  find_package(Torch QUIET)
-
-  if (Torch_FOUND)
-    message(STATUS "Torch found by CMake.")
-    set(TORCH_CUDA_ARCH_LIST "8.9" CACHE STRING "Torch CUDA arch list")
-  else()
-    message(STATUS "Torch not found -> building without Torch")
-    set(USE_TORCH OFF)
-  endif()
+if (CMAKE_CUDA_COMPILER)
+  find_package(CUDAToolkit REQUIRED)
+else()
+  set(CUDAToolkit_FOUND OFF)
 endif()
 
-if (USE_CUDA)
-  enable_language(CUDA OPTIONAL)
-
-  if (CMAKE_CUDA_COMPILER)
-    find_package(CUDAToolkit QUIET)
-    if (CUDAToolkit_FOUND)
-      set(CMAKE_CUDA_ARCHITECTURES 75 80 86 89)
-      set(CMAKE_CUDA_STANDARD 17)
-    else()
-      set(USE_CUDA OFF) # no toolkit CPU-only
-    endif()
-  else()
-    set(USE_CUDA OFF)   # no nvcc  CPU-only
-  endif()
+if (CUDAToolkit_FOUND)
+  set(CMAKE_CUDA_ARCHITECTURES 61 86 89)
+  set(CMAKE_CUDA_STANDARD 17)
 endif()
 
 message(STATUS "${Blue}${PROJECT_NAME}-4. Setting up project libraries ...${ColorReset}")
-configure_file(${PROJECT_SOURCE_DIR}/cmake_configure.h.in cmake_configure.h @ONLY)
+configure_file(${PROJECT_SOURCE_DIR}/configure.h.in configure.h @ONLY)
 add_subdirectory(src)
 
 if (BUILD_TESTS)

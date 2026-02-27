@@ -50,7 +50,7 @@ target_link_libraries(${namel}_${buildl}
 add_library(${namel}::${namel} ALIAS ${namel}_${buildl})
 
 # CUDA source codes
-if (USE_CUDA)
+if (CUDA)
   file(GLOB cu_src_files 
     cuda/threadlocal.cu
     cuda/poolAllocBST.cu
@@ -72,8 +72,8 @@ if (USE_CUDA)
 
   target_link_libraries(${namel}_cuda_${buildl}
       PUBLIC
-      $<IF:$<BOOL:${USE_CUDA}>,CUDA::cudart,>
-      $<IF:$<BOOL:${USE_CUDA}>,CUDA::cudart_static,>
+      $<IF:$<BOOL:${CUDA}>,CUDA::cudart,>
+      $<IF:$<BOOL:${CUDA}>,CUDA::cudart_static,>
       )
 
   add_library(${namel}::${namel}_cu ALIAS ${namel}_cuda_${buildl})

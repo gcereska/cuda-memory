@@ -34,7 +34,7 @@ foreach(t ${CPU_C_TESTS})
 endforeach()
 
 
-if (USE_CUDA)
+if (CUDA)
   file(GLOB CUDA_TESTS "*.cu")
 
 

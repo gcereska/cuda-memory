@@ -86,8 +86,7 @@ Edit the `TARGETS` array at the top of the script to choose which test to run (e
 |---|---|---|
 | `CMAKE_BUILD_TYPE` | `Release` | `Release` or `Debug` |
 | `CMAKE_CUDA_ARCHITECTURES` | `"75 80 86 89"` | Target GPU architectures |
-| `USE_CUDA` | `ON` | Build with CUDA support |
-| `USE_TORCH` | `ON` | Build with PyTorch/LibTorch support |
+| `CUDA` | `ON` | Build with CUDA support |
 | `BUILD_TESTS` | `ON` | Build test and benchmark executables |
 | `BUILD_EXAMPLES` | `OFF` | Build example programs |
 
