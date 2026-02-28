@@ -16,14 +16,22 @@ namespace pmalloc_freelist {
 #define MEM_MAX_THREADS 128
 
 
+struct poolMetaData{
+    uint sharedMemSize;
+    uint16_t freeListOffset;
+    uint16_t _padding;
+};
 
-__device__ MemBufferStorage memPools[MEM_MAX_THREADS];
-
-__device__ uint sharedMemSize; 
+// __device__ uint sharedMemSize; 
 
 //------------------------------------------------------------------------------------CUDA HELPER FUNCTIONS--------------------------------------------------------------------------------------------
 
-__device__ uint get_thread_pool_size(){
+__device__ uint get_shared_mem_size(){
+    extern __shared__ unsigned char smem[];
+    return ((poolMetaData*)smem)->sharedMemSize;
+}
+
+__device__  uint get_thread_pool_size(uint sharedMemSize){
     int total_threads =
         gridDim.x * gridDim.y * gridDim.z *
         blockDim.x * blockDim.y * blockDim.z;
@@ -31,7 +39,15 @@ __device__ uint get_thread_pool_size(){
     return (sharedMemSize/total_threads) & ~7u;
 }
 
-__device__ uint get_linear_thread_index(){
+__device__  uint get_mem_buffer_size(uint sharedMemSize){
+    int total_threads =
+        gridDim.x * gridDim.y * gridDim.z *
+        blockDim.x * blockDim.y * blockDim.z;
+
+    return ((sharedMemSize/total_threads) & ~7u) - sizeof(poolMetaData);
+}
+
+__device__  uint get_linear_thread_index(){
     return (((blockIdx.z * gridDim.y + blockIdx.y) * gridDim.x) + blockIdx.x)
     * (blockDim.x * blockDim.y * blockDim.z)
     +
@@ -40,26 +56,61 @@ __device__ uint get_linear_thread_index(){
      threadIdx.x);
 }
 
+__device__  unsigned char* get_thread_pool_start(uint threadIndex, uint sharedMemSize){
+    extern __shared__ unsigned char smem[];
+    return smem + (get_thread_pool_size(sharedMemSize) * threadIndex);
+}
+
+
+__device__  unsigned char* get_mem_buffer_start(uint threadIndex){
+    return get_thread_pool_start(threadIndex, get_shared_mem_size()) + sizeof(poolMetaData);
+}
+
+__device__ poolMetaData* get_pool_metadata(uint threadIndex){
+    return (poolMetaData*)get_thread_pool_start(threadIndex, get_shared_mem_size());
+}
+
+
+
+__device__  BlockHeader** get_free_list_ptr(uint threadIndex){
+    return (BlockHeader**)get_thread_pool_start(threadIndex, get_shared_mem_size());
+}
+
+__device__  BlockHeader* get_free_list(uint threadIndex){
+    uint16_t offset = get_pool_metadata(threadIndex)->freeListOffset;
+    if(offset == 0xFFFF) return NULL;
+
+    return (BlockHeader*)(get_mem_buffer_start(threadIndex) + offset);
+}
+
+__device__  void set_free_list(uint threadIndex, BlockHeader* header){
+    if(header == NULL){
+        get_pool_metadata(threadIndex)->freeListOffset = 0xFFFF;
+        return;
+    }
+    // dont want to mess with sign extension so dont use get_offset() here
+    get_pool_metadata(threadIndex)->freeListOffset = (uint16_t)((unsigned char*)header - get_mem_buffer_start(threadIndex));
+}
+
+
 //------------------------------------------------------------------------------------HELPER FUNCTIONS TO DEAL WITH THE STRUCT--------------------------------------------------------------------------------------------
 
 
-//this is kind of useles since I added the bitmapped BlockHeader
 __device__ int8_t get_full(BlockHeader* currentHeader){
     return currentHeader->fullSize < 0;
 }
 
-//this is kind of useles since I added the bitmapped BlockHeader
 //the size and full used to be packed into an int16 hence the helper functions
-__device__ int16_t get_node_size(BlockHeader* currentHeader){
+__device__  int16_t get_node_size(BlockHeader* currentHeader){
     return (int16_t)(currentHeader->fullSize & 0x7FFF);
 }
 
 //these are all relatively simple helper functions to make the pointer math easier
-__device__ int16_t get_offset(unsigned char* from, unsigned char* to){
+__device__  int16_t get_offset(unsigned char* from, unsigned char* to){
     return (unsigned char*)to - (unsigned char*)from;
 }
 
-__device__ BlockFooter* get_footer(BlockHeader* header){
+__device__  BlockFooter* get_footer(BlockHeader* header){
     return (BlockFooter*)((unsigned char*)header + get_node_size(header) + sizeof(BlockHeader));
 }
 
@@ -69,7 +120,7 @@ __device__ BlockHeader* get_prev_header(BlockHeader* currentHeader){
     uint threadIndex = get_linear_thread_index();
 
 
-    if((void*)currentHeader == (void*)memPools[threadIndex].memBuffer){
+    if((void*)currentHeader == (void*)get_mem_buffer_start(threadIndex)){
         return NULL; 
     }
 
@@ -85,9 +136,9 @@ __device__ BlockHeader* get_next_header(BlockHeader* currentHeader){
     uint threadIndex = get_linear_thread_index();
 
     
-    uint threadPoolSize = get_thread_pool_size(); 
+    uint threadPoolSize = get_thread_pool_size(get_shared_mem_size()); 
     
-    int currentHeaderOffset = get_offset(memPools[threadIndex].memBuffer, (unsigned char*)currentHeader);
+    int currentHeaderOffset = get_offset(get_mem_buffer_start(threadIndex), (unsigned char*)currentHeader);
     uint64_t temp_size = get_node_size(currentHeader);
     
     if((currentHeaderOffset + temp_size + (2*(sizeof(BlockHeader) + sizeof(BlockFooter)))) >= threadPoolSize){
@@ -99,7 +150,7 @@ __device__ BlockHeader* get_next_header(BlockHeader* currentHeader){
 }
 
 //gets the next header from the list it current resides in
-__device__ BlockHeader* get_next_list_header(BlockHeader* currentHeader){
+__device__  BlockHeader* get_next_list_header(BlockHeader* currentHeader){
     if(currentHeader->nextOffset == 0){
         return NULL;
     }
@@ -108,7 +159,7 @@ __device__ BlockHeader* get_next_list_header(BlockHeader* currentHeader){
 }
 
 //gets the previous header from the list it current resides in
-__device__ BlockHeader* get_prev_list_header(BlockHeader* currentHeader){
+__device__  BlockHeader* get_prev_list_header(BlockHeader* currentHeader){
     if(currentHeader->prevOffset == 0){
         return NULL;
     }
@@ -120,25 +171,18 @@ __device__ void list_push_ordered(BlockHeader** list, BlockHeader* insertionNode
     
     uint threadIndex = get_linear_thread_index();
 
-   
 
-    if(*list == NULL){
-        *list = insertionNode;
-
-       
+    if(get_free_list(threadIndex) == NULL){
+        set_free_list(threadIndex, insertionNode);
         insertionNode->nextOffset = 0;
-        
         insertionNode->prevOffset = 0;
-
-    
-
         return;
     }
     
     
-  
-    BlockHeader* current = *list;
+    BlockHeader* current = get_free_list(threadIndex);
     
+ 
     while(get_next_list_header(current) != NULL){
         if(get_node_size(current) < get_node_size(insertionNode)){
             break; // insert before current
@@ -157,7 +201,7 @@ __device__ void list_push_ordered(BlockHeader** list, BlockHeader* insertionNode
             prev->nextOffset = get_offset((unsigned char*)prev, (unsigned char*)insertionNode);
         else
         
-            *list = insertionNode; // new head
+            set_free_list(threadIndex, insertionNode); // new head
     } else {
         insertionNode->prevOffset = get_offset((unsigned char*)insertionNode, (unsigned char*)current);
         insertionNode->nextOffset = 0;
@@ -170,6 +214,8 @@ __device__ void list_push_ordered(BlockHeader** list, BlockHeader* insertionNode
 }
 
 __device__ void list_remove(BlockHeader** list, BlockHeader* deletionNode){
+    uint threadIndex = get_linear_thread_index();
+
     BlockHeader* currentNodeNext = NULL;
     BlockHeader* currentNode_prev = NULL;
     
@@ -190,7 +236,7 @@ __device__ void list_remove(BlockHeader** list, BlockHeader* deletionNode){
         }
     } else {
         // deletionNode was the head of the list
-        *list = currentNodeNext;
+        set_free_list(threadIndex, currentNodeNext);
     }
     
     // Fix the next node's prev pointer
@@ -218,13 +264,13 @@ __device__ void debug_print_buffer(){
     
 
     printf("\n|");
-    BlockHeader* currentNode = (BlockHeader*)memPools[threadIndex].memBuffer;
+    BlockHeader* currentNode = (BlockHeader*)get_mem_buffer_start(threadIndex);
     while (currentNode != NULL){
         printf(" %4u |", get_node_size(currentNode));
         currentNode = get_next_header(currentNode);
     }
     printf("\n|");
-    currentNode = (BlockHeader*)memPools[threadIndex].memBuffer;
+    currentNode = (BlockHeader*)get_mem_buffer_start(threadIndex);
 
     while (currentNode != NULL){
         if(get_full(currentNode)){
@@ -244,13 +290,13 @@ __device__ void debug_print_free_list(){
 
 
     printf("\n|");
-    BlockHeader* currentNode = (BlockHeader*)memPools[threadIndex].freeList;
+    BlockHeader* currentNode = get_free_list(threadIndex);
     while (currentNode != NULL){
         printf(" %4u |", get_node_size(currentNode));
         currentNode = get_next_list_header(currentNode);
     }
     printf("\n|");
-    currentNode = (BlockHeader*)memPools[threadIndex].freeList;
+    currentNode = get_free_list(threadIndex);
 
     while (currentNode != NULL){
         if(get_full(currentNode)){
@@ -264,30 +310,6 @@ __device__ void debug_print_free_list(){
 }
 
 
-__device__ void debug_print_full_list(){
-
-    uint threadIndex = get_linear_thread_index();
-
-
-    printf("\n|");
-    BlockHeader* currentNode = (BlockHeader*)memPools[threadIndex].fullList;
-    while (currentNode != NULL){
-        printf(" %4u |", get_node_size(currentNode));
-        currentNode = get_next_list_header(currentNode);
-    }
-    printf("\n|");
-    currentNode = (BlockHeader*)memPools[threadIndex].fullList;
-
-    while (currentNode != NULL){
-        if(get_full(currentNode)){
-            printf(" FULL |");
-        } else {
-            printf(" FREE |");
-        }
-        currentNode = get_next_list_header(currentNode);
-    }
-    printf(" \n\n");
-}
 
 //------------------------------------------------------------------------------------START OF ACTUAL FUNCTIONS FOR MALLOC--------------------------------------------------------------------------------------------
 
@@ -303,11 +325,6 @@ __device__ void init_gpu_buffer(uint incomingMemSize){
     uint threadIndex = get_linear_thread_index();
     // printf("linear thread index: %d\n",threadIndex);
     
-    if(threadIndex == 0){
-        sharedMemSize = incomingMemSize;
-    }
-    __syncthreads();
-    
     /*
     
     Because all operations use an offset based scheme to find neighbors,
@@ -321,29 +338,38 @@ __device__ void init_gpu_buffer(uint incomingMemSize){
     */
 
    
-    uint threadPoolSize = get_thread_pool_size();
-    threadPoolSize = threadPoolSize;
-    // printf("thread pool size: %d\n",threadPoolSize);
-    
+    uint threadPoolSize = get_thread_pool_size(incomingMemSize);
 
-    memPools[threadIndex].memBuffer = smem + (threadPoolSize * threadIndex);
-    memPools[threadIndex].freeList = NULL;
-    memPools[threadIndex].fullList = NULL;
-    // printf("thread index %d's memory pool pointer: %p\n",threadIndex,memPools[threadIndex].memBuffer);
+    // memPools[threadIndex].memBuffer = smem + (threadPoolSize * threadIndex);
+    // memPools[threadIndex].freeList = NULL;
 
+    // if(threadIndex == 0){
+    //     // printf("thread index %d's memory pool pointer: %p\n",threadIndex,memPools[threadIndex].memBuffer);
+    //     printf("thread index %d's new memory pool pointer: %p\n", threadIndex, get_thread_pool_start());
+    //     printf("thread index %d's new buffer pool pointer: %p\n", threadIndex, get_mem_buffer_start());
+    //     printf("freelist pointer: %p\n", get_free_list());
+
+    // }
+   
 
     // printf("mempool start pointer: %p\n", memPool.memBuffer);
+    poolMetaData* tempMetaData = (poolMetaData*)get_thread_pool_start(threadIndex, incomingMemSize);
+    tempMetaData->sharedMemSize = incomingMemSize;
 
-    BlockHeader *header = (BlockHeader*)memPools[threadIndex].memBuffer;
-    header->fullSize = (threadPoolSize - (sizeof(BlockHeader) + sizeof(BlockFooter))) & 0x7FFF;
+    set_free_list(threadIndex, NULL);
+
+
+    BlockHeader *header = (BlockHeader*)get_mem_buffer_start(threadIndex);
+    header->fullSize = (get_mem_buffer_size(incomingMemSize) - (sizeof(BlockHeader) + sizeof(BlockFooter))) & 0x7FFF;
     header->nextOffset = 0;
     header->prevOffset = 0;
     
-    list_push_ordered(&memPools[threadIndex].freeList, header);
+
+    list_push_ordered(get_free_list_ptr(threadIndex), header);
     
+
     BlockFooter *footer = get_footer(header);
     footer->headerOffset = get_offset((unsigned char*)footer, (unsigned char*)header);
-
     
 }
 
@@ -354,14 +380,14 @@ __device__ void* cmalloc(unsigned long size){
     bool haveSpaceForNextBlock = false;
    
 
-    if(memPools[threadIndex].freeList == NULL || get_node_size(memPools[threadIndex].freeList) < (size)){
+    if(get_free_list(threadIndex) == NULL || get_node_size(get_free_list(threadIndex)) < (size)){
         // printf("malloc eval null exit\n");
         return NULL;
     }
 
     
-    int preAllocationSize = get_node_size(memPools[threadIndex].freeList);
-    BlockHeader* newlyAllocatedHeader = memPools[threadIndex].freeList;
+    int preAllocationSize = get_node_size(get_free_list(threadIndex));
+    BlockHeader* newlyAllocatedHeader = get_free_list(threadIndex);
 
     // Align size to 8 bytes, leaving the last 2 bytes for the block footer
     int offset = (8 - ((sizeof(BlockHeader) + size + sizeof(BlockFooter)) % 8)) % 8;
@@ -386,8 +412,7 @@ __device__ void* cmalloc(unsigned long size){
     
 
     // Remove from free list before modifying
-    list_remove(&memPools[threadIndex].freeList, newlyAllocatedHeader);
-    // list_push_ordered(&memPools[threadIndex].fullList, newlyAllocatedHeader);
+    list_remove(get_free_list_ptr(threadIndex), newlyAllocatedHeader);
   
     
     
@@ -404,7 +429,7 @@ __device__ void* cmalloc(unsigned long size){
        
         newFreeFooter->headerOffset = get_offset((unsigned char*)newFreeFooter, (unsigned char*)newFreeHeader);
        
-        list_push_ordered(&memPools[threadIndex].freeList, newFreeHeader);
+        list_push_ordered(get_free_list_ptr(threadIndex), newFreeHeader);
         
     }
 
@@ -448,7 +473,7 @@ __device__ void cfree(void* addressForDeletion){
     // Forward coalesce
     if(forward_coalesce_valid){
         
-        list_remove(&memPools[threadIndex].freeList, nextHeader);
+        list_remove(get_free_list_ptr(threadIndex), nextHeader);
 
         int16_t tempSize = get_node_size(deletion_target);
         tempSize += sizeof(BlockFooter) + sizeof(BlockHeader) + get_node_size(nextHeader);
@@ -465,7 +490,7 @@ __device__ void cfree(void* addressForDeletion){
     // Backward coalesce
     if(backward_coalesce_valid){
         
-        list_remove(&memPools[threadIndex].freeList, prevHeader);
+        list_remove(get_free_list_ptr(threadIndex), prevHeader);
         
         int16_t tempSize = get_node_size(prevHeader);
 
@@ -477,10 +502,10 @@ __device__ void cfree(void* addressForDeletion){
         current_block_footer->headerOffset = get_offset((unsigned char*)current_block_footer, (unsigned char*)prevHeader);
         // printf("\nTarget for deletion %p\n", prevHeader);
         
-        list_push_ordered(&memPools[threadIndex].freeList, prevHeader);
+        list_push_ordered(get_free_list_ptr(threadIndex), prevHeader);
     } else {
         
-        list_push_ordered(&memPools[threadIndex].freeList, deletion_target);
+        list_push_ordered(get_free_list_ptr(threadIndex), deletion_target);
     }
 
 
