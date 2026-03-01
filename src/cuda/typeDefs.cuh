@@ -36,10 +36,10 @@ typedef struct {
     */
     int16_t fullSize;
 
-    int16_t nextOffset;
-    int16_t prevOffset;
+    int16_t nextListOffset;
+    int16_t prevListOffset;
 
-    int16_t padding;
+    int16_t prevAdjOffset;
 
 } BlockHeader;
 

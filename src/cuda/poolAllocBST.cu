@@ -116,31 +116,31 @@ __device__ RBTreeBlockHeader* get_next_header(RBTreeBlockHeader* currentHeader){
 
 //gets the next header from the list it current resides in
 __device__ BlockHeader* get_next_list_header(BlockHeader* currentHeader){
-    if(currentHeader->nextOffset == 0){
+    if(currentHeader->nextListOffset == 0){
         return NULL;
     }
-    return (BlockHeader*)((unsigned char*)currentHeader + currentHeader->nextOffset);
+    return (BlockHeader*)((unsigned char*)currentHeader + currentHeader->nextListOffset);
 }
 
 //gets the previous header from the list it current resides in
 __device__ BlockHeader* get_prev_list_header(BlockHeader* currentHeader){
-    if(currentHeader->prevOffset == 0){
+    if(currentHeader->prevListOffset == 0){
         return NULL;
     }
-    return (BlockHeader*)((unsigned char*)currentHeader + currentHeader->prevOffset);
+    return (BlockHeader*)((unsigned char*)currentHeader + currentHeader->prevListOffset);
 }
 
 __device__ void list_push_front(BlockHeader** list, BlockHeader* insertionNode){
     if(*list == NULL){
         *list = insertionNode;
-        insertionNode->nextOffset = 0;
-        insertionNode->prevOffset = 0;
+        insertionNode->nextListOffset = 0;
+        insertionNode->prevListOffset = 0;
         return;
     }
     
-    (*list)->prevOffset = get_offset((unsigned char*)*list, (unsigned char*)insertionNode);
-    insertionNode->nextOffset = get_offset((unsigned char*)insertionNode, (unsigned char*)*list);
-    insertionNode->prevOffset = 0;
+    (*list)->prevListOffset = get_offset((unsigned char*)*list, (unsigned char*)insertionNode);
+    insertionNode->nextListOffset = get_offset((unsigned char*)insertionNode, (unsigned char*)*list);
+    insertionNode->prevListOffset = 0;
     *list = insertionNode;
 }
 
@@ -148,20 +148,20 @@ __device__ void list_remove(BlockHeader** list, BlockHeader* deletionNode){
     BlockHeader* currentNodeNext = NULL;
     BlockHeader* currentNode_prev = NULL;
     
-    if(deletionNode->nextOffset != 0){
-        currentNodeNext = (BlockHeader*)((unsigned char*)deletionNode + deletionNode->nextOffset);
+    if(deletionNode->nextListOffset != 0){
+        currentNodeNext = (BlockHeader*)((unsigned char*)deletionNode + deletionNode->nextListOffset);
     }
     
-    if(deletionNode->prevOffset != 0){
-        currentNode_prev = (BlockHeader*)((unsigned char*)deletionNode + deletionNode->prevOffset);
+    if(deletionNode->prevListOffset != 0){
+        currentNode_prev = (BlockHeader*)((unsigned char*)deletionNode + deletionNode->prevListOffset);
     }
     
     // Fix the previous node's next pointer
     if(currentNode_prev != NULL){
         if(currentNodeNext != NULL){
-            currentNode_prev->nextOffset = get_offset((unsigned char*)currentNode_prev, (unsigned char*)currentNodeNext);
+            currentNode_prev->nextListOffset = get_offset((unsigned char*)currentNode_prev, (unsigned char*)currentNodeNext);
         } else {
-            currentNode_prev->nextOffset = 0;
+            currentNode_prev->nextListOffset = 0;
         }
     } else {
         // deletionNode was the head of the list
@@ -171,15 +171,15 @@ __device__ void list_remove(BlockHeader** list, BlockHeader* deletionNode){
     // Fix the next node's prev pointer
     if(currentNodeNext != NULL){
         if(currentNode_prev != NULL){
-            currentNodeNext->prevOffset = get_offset((unsigned char*)currentNodeNext, (unsigned char*)currentNode_prev);
+            currentNodeNext->prevListOffset = get_offset((unsigned char*)currentNodeNext, (unsigned char*)currentNode_prev);
         } else {
-            currentNodeNext->prevOffset = 0;
+            currentNodeNext->prevListOffset = 0;
         }
     }
     
     // Clear the deleted node's pointers
-    deletionNode->nextOffset = 0;
-    deletionNode->prevOffset = 0;
+    deletionNode->nextListOffset = 0;
+    deletionNode->prevListOffset = 0;
 }
 
 //------------------------------------------------------------------------------------DEBUG FUNCTIONS--------------------------------------------------------------------------------------------
