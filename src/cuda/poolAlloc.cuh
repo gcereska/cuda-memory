@@ -1,4 +1,5 @@
-#pragma once
+#ifndef POOLALLOC_CUH
+#define POOLALLOC_CUH
 
 #include "typeDefs.cuh"
 
@@ -24,10 +25,4 @@ namespace list_pool {
 
 }
 
-// __device__ void printlayout();
-
-// __device__ void printbytes();
-
-// __device__ int dataBytes(BlockHeader *head);
-
-// __device__ int headerBytes(BlockHeader *head);
+#endif
