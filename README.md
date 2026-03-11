@@ -108,8 +108,7 @@ Define one of these to control which allocator the macros route to:
 | `USE_THREAD_LOCAL_BEST_FIT` | Thread-local best-fit | `thread_pool::pmalloc_best_fit` |
 | `USE_WARP_LOCAL` | Warp-local first-fit | `warp_pool::pmalloc` |
 | `USE_WARP_LOCAL_BEST_FIT` | Warp-local best-fit | `warp_pool::pmalloc_best_fit` |
-| `USE_FREELIST_ALLOCATOR` | Global sorted freelist | `pmalloc_freelist::cmalloc` |
-| `USE_BST_ALLOCATOR` | Global Red-Black Tree | `pmalloc_bst::cmalloc` |
+| `USE_FREELIST_ALLOCATOR` | Global sorted freelist | `list_pool::pmalloc` |
 | (none) | Native device `malloc`/`free` | — |
 
 In CMake:
@@ -200,24 +199,9 @@ A sorted freelist allocator using relative offsets for all pointers. Each thread
 
 **API:**
 ```cpp
-pmalloc_freelist::init_gpu_buffer(pool_size_per_thread);
-void* p = pmalloc_freelist::cmalloc(size);
-pmalloc_freelist::cfree(p);
-```
-
----
-
-### BST (`pmalloc_bst`)
-
-**Files:** `src/cuda/poolAllocBST.cu`, `src/cuda/poolAllocBST.cuh`, `typeDefs.cuh`
-
-A Red-Black Tree based allocator for best-fit allocation. Each thread maintains a self-balancing BST of free blocks. Ask Julian for more specific details if needed.
-
-**API:**
-```cpp
-pmalloc_bst::init_gpu_buffer(pool_size_per_thread);
-void* p = pmalloc_bst::cmalloc(size);
-pmalloc_bst::cfree(p);
+list_pool::pool_init(pool_size_per_thread);
+void* p = list_pool::pmalloc(size);
+list_pool::pfree(p);
 ```
 
 ---
@@ -332,7 +316,6 @@ The macro interface lets you select an allocator at compile time and the macros 
 ```cpp
 #include "allocator.cuh"
 #include "poolAlloc.cuh"
-#include "poolAllocBST.cuh"
 
 // After setting a define (via CMake or #define), these macros are available:
 //   pool_init(size)         — or pool_init(size, threads_per_pool) for warp variants
