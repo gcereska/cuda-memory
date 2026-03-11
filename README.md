@@ -195,7 +195,7 @@ warp_pool::pfree(p);
 
 **Files:** `src/cuda/poolAlloc.cu`, `src/cuda/poolAlloc.cuh`, `typeDefs.cuh`
 
-A sorted freelist allocator using relative offsets for all pointers. Each thread gets its own pool managed with a doubly-linked free list sorted by block size largest first (just like thread_local). Includes a bubble-sort pass after each allocation/free to maintain ordering. Ask Julian for more specific details if needed.
+A sorted freelist allocator using relative offsets for all pointers. Each thread gets its own pool managed with a doubly-linked free list sorted by block size largest first (just like thread_local). The overhead for each allocation is only 8 bytes so this implementation is ideal when many individual allocations are required and you go over the limits of the other versions.
 
 **API:**
 ```cpp
