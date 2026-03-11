@@ -4,7 +4,7 @@
 
 #include "allocator.cuh"
 #include "poolAlloc.cuh"
-#include "poolAllocBST.cuh"
+// #include "poolAllocBST.cuh"
 // "typeDefs.cuh" also required in directory
 // libcuda_memory_cuda_release.a contains the .o for all allocators
 
@@ -38,11 +38,11 @@
     #define pmalloc(size)   pmalloc_freelist::cmalloc(size)
     #define pfree(ptr)      pmalloc_freelist::cfree(ptr)
 
-#elif defined(USE_BST_ALLOCATOR)
-    #define ALLOCATOR_NAME "Julian (BST)"
-    #define pool_init(size) pmalloc_bst::init_gpu_buffer(size)
-    #define pmalloc(size)   pmalloc_bst::cmalloc(size)
-    #define pfree(ptr)      pmalloc_bst::cfree(ptr)
+// #elif defined(USE_BST_ALLOCATOR)
+//     #define ALLOCATOR_NAME "Julian (BST)"
+//     #define pool_init(size) pmalloc_bst::init_gpu_buffer(size)
+//     #define pmalloc(size)   pmalloc_bst::cmalloc(size)
+//     #define pfree(ptr)      pmalloc_bst::cfree(ptr)
 
 #else
     #define ALLOCATOR_NAME "Native Device Malloc"

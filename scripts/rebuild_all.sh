@@ -4,7 +4,7 @@ FLAGS=(
   "USE_THREAD_LOCAL"
   "USE_WARP_LOCAL"
   "USE_FREELIST_ALLOCATOR"
-  "USE_BST_ALLOCATOR"
+  # "USE_BST_ALLOCATOR"
   "NONE" # native cuda malloc
 )
 

@@ -9,7 +9,7 @@
 
 #include <cumem/cuda/allocator.cuh>
 #include <cumem/cuda/poolAlloc.cuh>
-#include <cumem/cuda/poolAllocBST.cuh>
+// #include <cumem/cuda/poolAllocBST.cuh>
 
 // ===================== CUDA CHECK =====================
 #define CUDA_CHECK(call) do { \
@@ -38,7 +38,7 @@ enum Allocator_Modes_enum : int {
     MODE_THREAD_FIRST_FIT=0,  // thread local
     MODE_THREAD_BEST_FIT =1,   // thread local best fit
     MODE_FREELIST        =2,      // julian freelist
-    MODE_BST             =3,           // julian BST
+    // MODE_BST             =3,           // julian BST
     MODE_DEVICE_MALLOC   =4, // native cuda
     MODE_WARP_FIRST_FIT  =5,
     MODE_WARP_BEST_FIT   =6,
@@ -62,9 +62,9 @@ __device__ __forceinline__ void init_based_on_g_mode() {
         case MODE_FREELIST:
             list_pool::pool_init(g_dyn_smem_bytes);
             break;
-        case MODE_BST:
-            bst_pool::pool_init(g_dyn_smem_bytes);
-            break;
+        // case MODE_BST:
+        //     bst_pool::pool_init(g_dyn_smem_bytes);
+        //     break;
         case MODE_WARP_FIRST_FIT:
             warp_pool::pool_init(g_dyn_smem_bytes, g_threads_per_pool);
             break;
@@ -82,7 +82,7 @@ __device__ __forceinline__ void* alloc_based_on_g_mode(size_t n) {
         case MODE_THREAD_FIRST_FIT:  return thread_pool::pmalloc(n);
         case MODE_THREAD_BEST_FIT:   return thread_pool::pmalloc_best_fit(n);
         case MODE_FREELIST:          return list_pool::pmalloc(n);
-        case MODE_BST:               return bst_pool::pmalloc(n);
+        // case MODE_BST:               return bst_pool::pmalloc(n);
         case MODE_DEVICE_MALLOC:     return malloc(n);
         case MODE_WARP_BEST_FIT:     return warp_pool::pmalloc_best_fit(n);
         case MODE_WARP_FIRST_FIT:    return warp_pool::pmalloc(n);
@@ -102,9 +102,9 @@ __device__ __forceinline__ void free_based_on_g_mode(void* p) {
         case MODE_FREELIST:
             list_pool::pfree(p);
             break;
-        case MODE_BST:
-            bst_pool::pfree(p);
-            break;
+        // case MODE_BST:
+        //     bst_pool::pfree(p);
+        //     break;
         case MODE_WARP_BEST_FIT:
             warp_pool::pfree(p);
             break;
@@ -700,7 +700,7 @@ const char* mode_name(int m) {
         case MODE_THREAD_FIRST_FIT: return "thread_pool (first-fit)";
         case MODE_THREAD_BEST_FIT:  return "thread_pool (best-fit)";
         case MODE_FREELIST:         return "julian (freelist)";
-        case MODE_BST:              return "julian (BST best-fit)";
+        // case MODE_BST:              return "julian (BST best-fit)";
         case MODE_DEVICE_MALLOC:    return "device malloc/free";
         case MODE_WARP_FIRST_FIT:   return "warp_pool (first-fit)";
         case MODE_WARP_BEST_FIT:    return "warp_pool (best-fit)";
@@ -829,7 +829,7 @@ int main(int argc, char** argv) {
         MODE_WARP_FIRST_FIT,
         MODE_WARP_BEST_FIT,
         MODE_FREELIST,
-        MODE_BST,
+        // MODE_BST,
     }){
         run_idx++;
 

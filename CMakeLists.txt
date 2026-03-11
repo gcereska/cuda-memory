@@ -30,7 +30,7 @@ option(USE_WARP_LOCAL_BEST_FIT   "Use Warp Local Best Fit allocator" OFF)
 option(USE_THREAD_LOCAL          "Use Thread Local First Fit allocator" OFF)
 option(USE_WARP_LOCAL            "Use Warp Local First Fit allocator" ON)
 option(USE_FREELIST_ALLOCATOR    "Use Freelist allocator" OFF)
-option(USE_BST_ALLOCATOR         "Use BST allocator" OFF)
+# option(USE_BST_ALLOCATOR         "Use BST allocator" OFF)
 
 if (USE_THREAD_LOCAL_BEST_FIT)
   add_compile_definitions(USE_THREAD_LOCAL_BEST_FIT)
@@ -52,9 +52,9 @@ elseif (USE_FREELIST_ALLOCATOR)
   add_compile_definitions(USE_FREELIST_ALLOCATOR)
   message(STATUS "Configured to use: Freelist Allocator")
 
-elseif (USE_BST_ALLOCATOR)
-  add_compile_definitions(USE_BST_ALLOCATOR)
-  message(STATUS "Configured to use: BST Allocator")
+# elseif (USE_BST_ALLOCATOR)
+#   add_compile_definitions(USE_BST_ALLOCATOR)
+#   message(STATUS "Configured to use: BST Allocator")
 
 else()
   # No flags were turned on. Native Device Malloc for Universal Tests
@@ -136,7 +136,7 @@ endif()
 
 if (CUDAToolkit_FOUND)
   #set(CMAKE_CUDA_ARCHITECTURES 61 86 89)
-  set(CMAKE_CUDA_ARCHITECTURES 86 89)
+  set(CMAKE_CUDA_ARCHITECTURES 75 80 86 89)
   set(CMAKE_CUDA_STANDARD 17)
 endif()
 

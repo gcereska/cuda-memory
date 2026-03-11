@@ -53,7 +53,7 @@ add_library(${namel}::${namel} ALIAS ${namel}_${buildl})
 if (CUDA)
   file(GLOB cu_src_files
     cuda/threadlocal.cu
-    cuda/poolAllocBST.cu
+    # cuda/poolAllocBST.cu
     cuda/poolAlloc.cu
     cuda/RBTree.cu
     cuda/warplocal.cu

@@ -2,7 +2,7 @@
 
 #include <cumem/cuda/allocator.cuh>
 #include <cumem/cuda/poolAlloc.cuh>
-#include <cumem/cuda/poolAllocBST.cuh>
+// #include <cumem/cuda/poolAllocBST.cuh>
 
 #if defined(USE_THREAD_LOCAL_BEST_FIT)
 #define ALLOCATOR_NAME "Thread Local (Best Fit)"
@@ -39,12 +39,12 @@
 #define pmalloc list_pool::pmalloc
 #define pfree list_pool::pfree
 
-#elif defined(USE_BST_ALLOCATOR)
-#define ALLOCATOR_NAME "Julian (BST)"
-#define pool_type bst_pool
-#define pool_init bst_pool::pool_init
-#define pmalloc bst_pool::pmalloc
-#define pfree bst_pool::pfree
+// #elif defined(USE_BST_ALLOCATOR)
+// #define ALLOCATOR_NAME "Julian (BST)"
+// #define pool_type bst_pool
+// #define pool_init bst_pool::pool_init
+// #define pmalloc bst_pool::pmalloc
+// #define pfree bst_pool::pfree
 
 #else
 #define ALLOCATOR_NAME "Native Device Malloc"

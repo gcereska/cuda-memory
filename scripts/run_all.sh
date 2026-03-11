@@ -3,7 +3,7 @@
 # 1. Add the names of the test executables you want to run
 TARGETS=(
   "blueprint"
-  #"benchmark_all"
+  "benchmark_all"
 )
 
 # 2. The list of build directories we generated in the compile script
@@ -13,7 +13,7 @@ BUILD_DIRS=(
   "build_USE_THREAD_LOCAL"
   "build_USE_WARP_LOCAL"
   "build_USE_FREELIST_ALLOCATOR"
-  "build_USE_BST_ALLOCATOR"
+  # "build_USE_BST_ALLOCATOR"
   "build_native"
 )
 
