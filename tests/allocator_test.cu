@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdint>
 #include <cassert>
+#include <string>
 
 #include <cumem/blueprint.h>
 
@@ -858,7 +859,7 @@ __global__ void test_best_fit() {
     pfree(c);  // 128-byte hole
 
     // Best fit should find the 32-byte hole for a 24-byte request
-    void* best = pool_type::pmalloc_best_fit(24);
+    void* best = pmalloc(24);
 
     if (best) {
         verify_memory_writable(best, 24);
@@ -884,6 +885,7 @@ int main() {
     printf("Configuration:\n");
     printf("  Shared Memory Size: %zu KB\n", SHARED_MEM_SIZE / 1024);
     printf("  Number of Threads:  %d\n", NUM_THREADS);
+    printf("  Using Allocator: " ALLOCATOR_NAME "\n");
     printf("============================================\n\n");
 
     // Check device properties
