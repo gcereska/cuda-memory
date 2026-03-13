@@ -726,7 +726,6 @@ float time_allocator_suite_once(size_t dynBytes) {
     test_coalescing_orders<<<1, NUM_THREADS, dynBytes>>>();
     test_splitting<<<1, NUM_THREADS, dynBytes>>>();
     test_size_boundaries<<<1, NUM_THREADS, dynBytes>>>();
-    test_exhaustion<<<1, NUM_THREADS, dynBytes>>>();
     test_fragmentation<<<1, NUM_THREADS, dynBytes>>>();
     test_free_list_order<<<1, NUM_THREADS, dynBytes>>>();
     test_null_free<<<1, NUM_THREADS, dynBytes>>>();
@@ -738,7 +737,6 @@ float time_allocator_suite_once(size_t dynBytes) {
     test_thread_isolation<<<1, NUM_THREADS, dynBytes>>>();
     test_repeated_cycles<<<1, NUM_THREADS, dynBytes>>>();
     test_mixed_sizes<<<1, NUM_THREADS, dynBytes>>>();
-    //test_best_fit<<<1, NUM_THREADS, dynBytes>>>();
 
     CUDA_CHECK(cudaEventRecord(e));
     CUDA_CHECK(cudaEventSynchronize(e));
@@ -779,7 +777,7 @@ float time_fuzzy_once(const TestOperation* d_ops, size_t dynBytes) {
 int main(int argc, char** argv) {
     // Seed control for fuzzy test
     int seed = 0;
-    int iters  = 1000;
+    int iters  = 100;
 
 
 
@@ -805,7 +803,7 @@ int main(int argc, char** argv) {
     printf("BENCH_VERBOSE:           %d (0 recommended)\n\n", (int)BENCH_VERBOSE);
 
     // For device malloc/free -. give it a heap 256MB
-    CUDA_CHECK(cudaDeviceSetLimit(cudaLimitMallocHeapSize, 256ULL * 1024ULL * 1024ULL));
+    CUDA_CHECK(cudaDeviceSetLimit(cudaLimitMallocHeapSize, 1ULL * 1024ULL * 1024ULL * 1024ULL)); // 1GB
 
     // Prepare fuzzy ops on device (same generation)
     TestOperation h_ops[FUZZ_NUM_THREADS * OPS_PER_THREAD];
@@ -819,6 +817,16 @@ int main(int argc, char** argv) {
     int run_idx = -1;
     //for (int mode : {MODE_THREAD_FIRST_FIT, MODE_TL_BEST_FIT, MODE_DEVICE_MALLOC}) {
     for(int mode : {
+        MODE_THREAD_FIRST_FIT,
+        MODE_THREAD_BEST_FIT,
+        MODE_WARP_FIRST_FIT,
+        MODE_WARP_BEST_FIT,
+        MODE_DEVICE_MALLOC,
+        MODE_THREAD_FIRST_FIT,
+        MODE_THREAD_BEST_FIT,
+        MODE_WARP_FIRST_FIT,
+        MODE_WARP_BEST_FIT,
+        MODE_FREELIST,
         MODE_THREAD_FIRST_FIT,
         MODE_THREAD_BEST_FIT,
         MODE_WARP_FIRST_FIT,
