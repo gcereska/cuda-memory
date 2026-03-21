@@ -96,18 +96,51 @@ __device__  void set_free_list(uint threadIndex, uint sharedMemSize, BlockHeader
 
 //------------------------------------------------------------------------------------HELPER FUNCTIONS TO DEAL WITH THE STRUCT--------------------------------------------------------------------------------------------
 
+__device__ void set_full(BlockHeader* currentHeader){
+    currentHeader->fullSize |= 0x8000;
+}
+
+__device__ void set_empty(BlockHeader* currentHeader){
+    currentHeader->fullSize &= 0x7FFF;
+}
 
 __device__ int8_t get_full(BlockHeader* currentHeader){
     return currentHeader->fullSize < 0;
 }
 
 //the size and full used to be packed into an int16 hence the helper functions
-__device__  int16_t get_node_size(BlockHeader* currentHeader){
-    return (int16_t)(currentHeader->fullSize & 0x7FFF);
+__device__  uint32_t get_node_size(BlockHeader* currentHeader){
+    return ((uint32_t)(currentHeader->fullSize & 0x7FFF) * 8);
 }
 
+__device__  int32_t get_node_prevAdjOffset(BlockHeader* currentHeader){
+    return((int32_t)currentHeader->prevAdjOffset * 8);
+}
+
+__device__  int32_t get_node_nextListOffset(BlockHeader* currentHeader){
+    return ((int32_t)currentHeader->nextListOffset * 8);
+}
+
+__device__  int32_t get_node_prevListOffset(BlockHeader* currentHeader){
+    return ((int32_t)currentHeader->prevListOffset * 8);
+}
+__device__  void set_node_size(BlockHeader* currentHeader, uint16_t incomingSize){
+    currentHeader->fullSize = ((incomingSize / 8) & 0x7FFF) | (currentHeader->fullSize & 0x8000);
+}
+
+__device__  void set_node_nextListOffset(BlockHeader* currentHeader, int32_t incomingOffset){
+    currentHeader->nextListOffset = (int16_t)(incomingOffset / 8);
+}
+
+__device__  void set_node_prevListOffset(BlockHeader* currentHeader, int32_t incomingOffset){
+    currentHeader->prevListOffset = (int16_t)(incomingOffset / 8);
+}
+
+__device__  void set_node_prevAdjOffset(BlockHeader* currentHeader, int32_t incomingOffset){
+    currentHeader->prevAdjOffset = (int16_t)(incomingOffset / 8);
+}
 //these are all relatively simple helper functions to make the pointer math easier
-__device__  int16_t get_offset(unsigned char* from, unsigned char* to){
+__device__  int32_t get_offset(unsigned char* from, unsigned char* to){
     return (unsigned char*)to - (unsigned char*)from;
 }
 
@@ -121,7 +154,8 @@ __device__ BlockHeader* get_prev_header(BlockHeader* currentHeader, uint sharedM
         return NULL; 
     }
 
-    BlockHeader* prevHeader = (BlockHeader*)((unsigned char*)currentHeader + currentHeader->prevAdjOffset);
+    BlockHeader* prevHeader = (BlockHeader*)((unsigned char*)currentHeader + get_node_prevAdjOffset(currentHeader));
+    // BlockHeader* prevHeader = (BlockHeader*)((unsigned char*)currentHeader + currentHeader->prevAdjOffset);
     return prevHeader;
 }
 
@@ -145,20 +179,25 @@ __device__ BlockHeader* get_next_header(BlockHeader* currentHeader, uint sharedM
 
 //gets the next header from the list it current resides in
 __device__  BlockHeader* get_next_list_header(BlockHeader* currentHeader){
-    if(currentHeader->nextListOffset == 0){
+    uint32_t offset = get_node_nextListOffset(currentHeader);
+    // printf("get_next_list_header: %d\n", offset);
+    if(offset == 0){
         return NULL;
     }
     
-    return (BlockHeader*)((unsigned char*)currentHeader + currentHeader->nextListOffset);
+    return (BlockHeader*)((unsigned char*)currentHeader + offset);
 }
 
 //gets the previous header from the list it current resides in
 __device__  BlockHeader* get_prev_list_header(BlockHeader* currentHeader){
-    if(currentHeader->prevListOffset == 0){
+    uint32_t offset = get_node_prevListOffset(currentHeader);
+    // printf("get_prev_list_header: %d\n", offset);
+
+    if(offset == 0){
         return NULL;
     }
     
-    return (BlockHeader*)((unsigned char*)currentHeader + currentHeader->prevListOffset);
+    return (BlockHeader*)((unsigned char*)currentHeader + offset);
 }
 
 __device__ void list_push_ordered(BlockHeader* insertionNode, uint sharedMemSize){
@@ -167,8 +206,11 @@ __device__ void list_push_ordered(BlockHeader* insertionNode, uint sharedMemSize
 
     if(get_free_list(threadIndex, sharedMemSize) == NULL){
         set_free_list(threadIndex, sharedMemSize, insertionNode);
-        insertionNode->nextListOffset = 0;
-        insertionNode->prevListOffset = 0;
+        set_node_nextListOffset(insertionNode, 0);
+        set_node_prevListOffset(insertionNode, 0);
+
+        // insertionNode->nextListOffset = 0;
+        // insertionNode->prevListOffset = 0;
         return;
     }
     
@@ -187,18 +229,30 @@ __device__ void list_push_ordered(BlockHeader* insertionNode, uint sharedMemSize
     
     if(get_node_size(current) < get_node_size(insertionNode)){
         BlockHeader* prev = get_prev_list_header(current);
-        insertionNode->nextListOffset = get_offset((unsigned char*)insertionNode, (unsigned char*)current);
-        insertionNode->prevListOffset = (prev != NULL) ? get_offset((unsigned char*)insertionNode, (unsigned char*)prev) : 0;
-        current->prevListOffset = get_offset((unsigned char*)current, (unsigned char*)insertionNode);
+        set_node_nextListOffset(insertionNode, get_offset((unsigned char*)insertionNode, (unsigned char*)current));
+        // insertionNode->nextListOffset = get_offset((unsigned char*)insertionNode, (unsigned char*)current);
+        set_node_prevListOffset(insertionNode, (prev != NULL) ? get_offset((unsigned char*)insertionNode, (unsigned char*)prev) : 0);
+        // insertionNode->prevListOffset = (prev != NULL) ? get_offset((unsigned char*)insertionNode, (unsigned char*)prev) : 0;
+
+        set_node_prevListOffset(current, get_offset((unsigned char*)current, (unsigned char*)insertionNode));
+
+        // current->prevListOffset = get_offset((unsigned char*)current, (unsigned char*)insertionNode);
         if(prev != NULL)
-            prev->nextListOffset = get_offset((unsigned char*)prev, (unsigned char*)insertionNode);
+            set_node_nextListOffset(prev, get_offset((unsigned char*)prev, (unsigned char*)insertionNode));
+
+            // prev->nextListOffset = get_offset((unsigned char*)prev, (unsigned char*)insertionNode);
         else
         
             set_free_list(threadIndex, sharedMemSize, insertionNode); // new head
     } else {
-        insertionNode->prevListOffset = get_offset((unsigned char*)insertionNode, (unsigned char*)current);
-        insertionNode->nextListOffset = 0;
-        current->nextListOffset = get_offset((unsigned char*)current, (unsigned char*)insertionNode);
+        set_node_prevListOffset(insertionNode, get_offset((unsigned char*)insertionNode, (unsigned char*)current));
+        // insertionNode->prevListOffset = get_offset((unsigned char*)insertionNode, (unsigned char*)current);
+        set_node_nextListOffset(insertionNode, 0);
+        // insertionNode->nextListOffset = 0;
+        
+        set_node_nextListOffset(current, get_offset((unsigned char*)current, (unsigned char*)insertionNode));
+        // current->nextListOffset = get_offset((unsigned char*)current, (unsigned char*)insertionNode);
+
     }
 
    
@@ -212,20 +266,25 @@ __device__ void list_remove(BlockHeader* deletionNode, uint sharedMemSize){
     BlockHeader* currentNodeNext = NULL;
     BlockHeader* currentNode_prev = NULL;
     
-    if(deletionNode->nextListOffset != 0){
-        currentNodeNext = (BlockHeader*)((unsigned char*)deletionNode + deletionNode->nextListOffset);
+    int32_t nextListOffset = get_node_nextListOffset(deletionNode);
+    int32_t prevListOffset = get_node_prevListOffset(deletionNode);
+
+    if(nextListOffset != 0){
+        currentNodeNext = (BlockHeader*)((unsigned char*)deletionNode + nextListOffset);
     }
     
-    if(deletionNode->prevListOffset != 0){
-        currentNode_prev = (BlockHeader*)((unsigned char*)deletionNode + deletionNode->prevListOffset);
+    if(prevListOffset != 0){
+        currentNode_prev = (BlockHeader*)((unsigned char*)deletionNode + prevListOffset);
     }
     
     // Fix the previous node's next pointer
     if(currentNode_prev != NULL){
         if(currentNodeNext != NULL){
-            currentNode_prev->nextListOffset = get_offset((unsigned char*)currentNode_prev, (unsigned char*)currentNodeNext);
+            set_node_nextListOffset(currentNode_prev, get_offset((unsigned char*)currentNode_prev, (unsigned char*)currentNodeNext));
+            // currentNode_prev->nextListOffset = get_offset((unsigned char*)currentNode_prev, (unsigned char*)currentNodeNext);
         } else {
-            currentNode_prev->nextListOffset = 0;
+            set_node_nextListOffset(currentNode_prev, 0);
+            // currentNode_prev->nextListOffset = 0;
         }
     } else {
         // deletionNode was the head of the list
@@ -235,15 +294,21 @@ __device__ void list_remove(BlockHeader* deletionNode, uint sharedMemSize){
     // Fix the next node's prev pointer
     if(currentNodeNext != NULL){
         if(currentNode_prev != NULL){
-            currentNodeNext->prevListOffset = get_offset((unsigned char*)currentNodeNext, (unsigned char*)currentNode_prev);
+            set_node_prevListOffset(currentNodeNext, get_offset((unsigned char*)currentNodeNext, (unsigned char*)currentNode_prev));
+
+            // currentNodeNext->prevListOffset = get_offset((unsigned char*)currentNodeNext, (unsigned char*)currentNode_prev);
         } else {
-            currentNodeNext->prevListOffset = 0;
+            set_node_prevListOffset(currentNodeNext, 0);
+
+            // currentNodeNext->prevListOffset = 0;
         }
     }
     
     // Clear the deleted node's pointers
-    deletionNode->nextListOffset = 0;
-    deletionNode->prevListOffset = 0;
+    set_node_prevListOffset(deletionNode, 0);
+    set_node_nextListOffset(deletionNode, 0);
+    // deletionNode->nextListOffset = 0;
+    // deletionNode->prevListOffset = 0;
 }
 
 
@@ -339,10 +404,17 @@ __device__ void pool_init(uint incomingMemSize){
 
 
     BlockHeader *header = (BlockHeader*)get_mem_buffer_start(threadIndex, incomingMemSize);
-    header->fullSize = (get_mem_buffer_size(incomingMemSize) - (sizeof(BlockHeader) )) & 0x7FFF;
-    header->nextListOffset = 0;
-    header->prevListOffset = 0;
-    header->prevAdjOffset = 0;    
+    set_node_size(header, (get_mem_buffer_size(incomingMemSize) - (sizeof(BlockHeader))));
+    set_empty(header);
+    // header->fullSize = (get_mem_buffer_size(incomingMemSize) - (sizeof(BlockHeader) )) & 0x7FFF;
+    set_node_nextListOffset(header,0);
+    // header->nextListOffset = 0;
+    set_node_prevListOffset(header,0);
+
+    // header->prevListOffset = 0;
+    set_node_prevAdjOffset(header,0);
+
+    // header->prevAdjOffset = 0;    
 
     list_push_ordered(header, incomingMemSize);
     
@@ -362,7 +434,7 @@ __device__ void* pmalloc(unsigned long size){
     }
 
     
-    int preAllocationSize = get_node_size(freeList);
+    uint32_t preAllocationSize = get_node_size(freeList);
     BlockHeader* newlyAllocatedHeader = freeList;
 
     // Align size to 8 bytes
@@ -378,10 +450,13 @@ __device__ void* pmalloc(unsigned long size){
         sizeToAlloc = preAllocationSize;
     }
     
-    newlyAllocatedHeader->fullSize = sizeToAlloc & 0x7FFF;
-    newlyAllocatedHeader->fullSize |= 0x8000; //sets full
-
-    newlyAllocatedHeader->prevAdjOffset = freeList->prevAdjOffset;
+    set_node_size(newlyAllocatedHeader, sizeToAlloc);
+    set_full(newlyAllocatedHeader);
+    
+    // newlyAllocatedHeader->fullSize = sizeToAlloc & 0x7FFF;
+    // newlyAllocatedHeader->fullSize |= 0x8000; //sets full
+    set_node_prevAdjOffset(newlyAllocatedHeader, get_node_prevAdjOffset(freeList));
+    // newlyAllocatedHeader->prevAdjOffset = freeList->prevAdjOffset;
 
     // Remove from free list before modifying
     list_remove(newlyAllocatedHeader, sharedMemSize);
@@ -390,12 +465,18 @@ __device__ void* pmalloc(unsigned long size){
     
     if(haveSpaceForNextBlock){
         BlockHeader* newFreeHeader = (BlockHeader*)((unsigned char*)(newlyAllocatedHeader) + sizeof(BlockHeader) + sizeToAlloc);
-       
-        newFreeHeader->fullSize = remainingSize & 0x7FFF; //both sets size and sets empty
-        newFreeHeader->nextListOffset = 0;
-        newFreeHeader->prevListOffset = 0;
-       
-        newFreeHeader->prevAdjOffset = get_offset((unsigned char*)newFreeHeader, (unsigned char*)newlyAllocatedHeader);
+        set_node_size(newFreeHeader, remainingSize);
+        set_empty(newFreeHeader);
+        // newFreeHeader->fullSize = remainingSize & 0x7FFF; //both sets size and sets empty
+        set_node_nextListOffset(newFreeHeader, 0);
+
+        // newFreeHeader->nextListOffset = 0;
+        set_node_prevListOffset(newFreeHeader, 0);
+
+        // newFreeHeader->prevListOffset = 0;
+        set_node_prevAdjOffset(newFreeHeader, get_offset((unsigned char*)newFreeHeader, (unsigned char*)newlyAllocatedHeader));
+        
+        // newFreeHeader->prevAdjOffset = get_offset((unsigned char*)newFreeHeader, (unsigned char*)newlyAllocatedHeader);
 
 
         list_push_ordered(newFreeHeader, sharedMemSize);
@@ -421,7 +502,8 @@ __device__ void pfree(void* addressForDeletion){
     BlockHeader* deletion_target = (BlockHeader*)((unsigned char*)addressForDeletion - sizeof(BlockHeader));
     // printf("\nTarget for deletion %p\n", deletion_target);
     
-    deletion_target->fullSize &= 0x7FFF;
+    // deletion_target->fullSize &= 0x7FFF;
+    set_empty(deletion_target);
 
     bool forward_coalesce_valid = false;
     bool backward_coalesce_valid = false;
@@ -443,14 +525,17 @@ __device__ void pfree(void* addressForDeletion){
         
         list_remove(nextHeader, sharedMemSize);
 
-        int16_t tempSize = get_node_size(deletion_target);
+        uint32_t tempSize = get_node_size(deletion_target);
         tempSize += sizeof(BlockHeader) + get_node_size(nextHeader);
         
-        deletion_target->fullSize = tempSize & 0x7FFF;
+        set_node_size(deletion_target, tempSize);
+        set_empty(deletion_target);
+        // deletion_target->fullSize = tempSize & 0x7FFF;
 
         BlockHeader* tempNextHeader = get_next_header(deletion_target, sharedMemSize);
         if(tempNextHeader != NULL){ 
-            tempNextHeader->prevAdjOffset = get_offset((unsigned char*)tempNextHeader, (unsigned char*)deletion_target);
+            set_node_prevAdjOffset(tempNextHeader, get_offset((unsigned char*)tempNextHeader, (unsigned char*)deletion_target));
+            // tempNextHeader->prevAdjOffset = get_offset((unsigned char*)tempNextHeader, (unsigned char*)deletion_target);
         }
         // printf("\nTarget for deletion %p\n", nextHeader);
         
@@ -462,14 +547,16 @@ __device__ void pfree(void* addressForDeletion){
         
         list_remove(prevHeader, sharedMemSize);
         
-        int16_t tempSize = get_node_size(prevHeader);
+        uint32_t tempSize = get_node_size(prevHeader);
 
         tempSize += sizeof(BlockHeader) + get_node_size(deletion_target);
-        prevHeader->fullSize = tempSize & 0x7FFF;
+        set_node_size(prevHeader, tempSize);
+        // prevHeader->fullSize = tempSize & 0x7FFF;
         
         BlockHeader* tempNextHeader = get_next_header(deletion_target, sharedMemSize);
         if(tempNextHeader != NULL){ 
-            tempNextHeader->prevAdjOffset = get_offset((unsigned char*)tempNextHeader, (unsigned char*)prevHeader);
+            set_node_prevAdjOffset(tempNextHeader, get_offset((unsigned char*)tempNextHeader, (unsigned char*)prevHeader));
+            // tempNextHeader->prevAdjOffset = get_offset((unsigned char*)tempNextHeader, (unsigned char*)prevHeader);
         }
         // printf("\nTarget for deletion %p\n", prevHeader);
         
