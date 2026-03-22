@@ -3,9 +3,9 @@
 
 typedef struct {
 
-    
+
     /*
-    first bit will be full status, second bit will be color 
+    first bit will be full status, second bit will be color
     typedef struct{
         int16_t fullStatus : 1
         int16_t color : 1
@@ -24,9 +24,9 @@ typedef struct {
 
 typedef struct {
 
-    
+
     /*
-    first bit will be full status, second bit will be color 
+    first bit will be full status, second bit will be color
     typedef struct{
         int16_t fullStatus : 1
         int16_t color : 1
@@ -45,9 +45,9 @@ typedef struct {
 
 typedef struct {
 
-    /*while 6 byte accesses are bad, 2 bytes should be ok because they will still be fully accessed in one word. 
+    /*while 6 byte accesses are bad, 2 bytes should be ok because they will still be fully accessed in one word.
     I will prob pad the size to align the total allocation to 4 bytes however*/
-    
+
     int16_t headerOffset;
 } BlockFooter;
 
