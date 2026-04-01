@@ -42,14 +42,24 @@ enum Allocator_Modes_enum : int {
     MODE_DEVICE_MALLOC   =4, // native cuda
     MODE_WARP_FIRST_FIT  =5,
     MODE_WARP_BEST_FIT   =6,
+    MODE_GLOBAL_FIRST_FIT=7,
+    MODE_GLOBAL_BEST_FIT =8,
 };
 
 // Managed globals on unified memory so kernels can stay the same signature
 __device__ __managed__ int    g_mode = MODE_THREAD_FIRST_FIT; // mode of the kernel call
 __device__ __managed__ size_t g_dyn_smem_bytes = 0; // number of bytes requested for a kernel call needed for pool_init
 __device__ __managed__ int    g_threads_per_pool = 1;
+
+// Global-memory heap pointer + size (set from host before launching global modes)
+__device__ __managed__ std::byte* g_global_heap = nullptr;
+__device__ __managed__ size_t     g_global_heap_bytes = 0;
+
 // we run the same kernel calls but change these global (unified) variables to switch which allocator to use
 
+__device__ __forceinline__ bool is_global_mode_device() {
+    return g_mode == MODE_GLOBAL_FIRST_FIT || g_mode == MODE_GLOBAL_BEST_FIT;
+}
 
 __device__ __forceinline__ void init_based_on_g_mode() {
     switch (g_mode) {
@@ -71,6 +81,12 @@ __device__ __forceinline__ void init_based_on_g_mode() {
         case MODE_WARP_BEST_FIT:
             warp_pool::pool_init(g_dyn_smem_bytes, g_threads_per_pool);
             break;
+        case MODE_GLOBAL_FIRST_FIT:
+            glob_pool::pool_init(g_global_heap, g_global_heap_bytes);
+            break;
+        case MODE_GLOBAL_BEST_FIT:
+            glob_pool::pool_init(g_global_heap, g_global_heap_bytes);
+            break;
         case MODE_DEVICE_MALLOC:
         default:
             break;
@@ -86,6 +102,8 @@ __device__ __forceinline__ void* alloc_based_on_g_mode(size_t n) {
         case MODE_DEVICE_MALLOC:     return malloc(n);
         case MODE_WARP_BEST_FIT:     return warp_pool::pmalloc_best_fit(n);
         case MODE_WARP_FIRST_FIT:    return warp_pool::pmalloc(n);
+        case MODE_GLOBAL_FIRST_FIT:  return glob_pool::pmalloc(n);
+        case MODE_GLOBAL_BEST_FIT:   return glob_pool::pmalloc_best_fit(n);
         default:                     return nullptr;
     }
 }
@@ -111,6 +129,12 @@ __device__ __forceinline__ void free_based_on_g_mode(void* p) {
         case MODE_WARP_FIRST_FIT:
             warp_pool::pfree(p);
             break;
+        case MODE_GLOBAL_FIRST_FIT:
+            glob_pool::pfree(p);
+            break;
+        case MODE_GLOBAL_BEST_FIT:
+            glob_pool::pfree(p);
+            break;
         case MODE_DEVICE_MALLOC:
             free(p);
             break;
@@ -121,6 +145,10 @@ __device__ __forceinline__ void free_based_on_g_mode(void* p) {
 static constexpr int    NUM_THREADS = 32;
 static constexpr size_t SHARED_MEM_ALLOC_TEST = (48 * 1024) - 16;
 static constexpr size_t SHARED_MEM_FUZZY = (32 * 1024);
+
+// Global-memory heap sizes (same as shared mem counterparts for apples-to-apples)
+static constexpr size_t GLOBAL_HEAP_ALLOC_TEST = SHARED_MEM_ALLOC_TEST;
+static constexpr size_t GLOBAL_HEAP_FUZZY      = SHARED_MEM_FUZZY;
 
 // copy and pasted helpers
 __device__ bool verify_memory_writable(void* ptr, size_t size) {
@@ -411,7 +439,8 @@ __global__ void test_max_allocation() {
     init_based_on_g_mode();
 
     bool passed = true;
-    size_t approx_pool_size = (g_dyn_smem_bytes - 512) / 32;
+    size_t heap_bytes = is_global_mode_device() ? g_global_heap_bytes : g_dyn_smem_bytes;
+    size_t approx_pool_size = (heap_bytes - 512) / 32;
 
     void* ptr = nullptr;
     size_t successful_size = 0;
@@ -664,6 +693,8 @@ const char* mode_name(int m) {
         case MODE_DEVICE_MALLOC:    return "device malloc/free";
         case MODE_WARP_FIRST_FIT:   return "warp_pool (first-fit)";
         case MODE_WARP_BEST_FIT:    return "warp_pool (best-fit)";
+        case MODE_GLOBAL_FIRST_FIT: return "glob_pool (first-fit)";
+        case MODE_GLOBAL_BEST_FIT:  return "glob_pool (best-fit)";
         default:                    return "unknown";
     }
 }
@@ -677,14 +708,29 @@ const char* mode_name_csv(int m) {
         case MODE_DEVICE_MALLOC:    return "device_malloc";
         case MODE_WARP_FIRST_FIT:   return "warp_first_fit";
         case MODE_WARP_BEST_FIT:    return "warp_best_fit";
+        case MODE_GLOBAL_FIRST_FIT: return "global_first_fit";
+        case MODE_GLOBAL_BEST_FIT:  return "global_best_fit";
         default:                    return "unknown";
     }
+}
+
+// Helper: is this a global-memory mode? (host side)
+static bool is_global_mode_host(int m) {
+    return m == MODE_GLOBAL_FIRST_FIT || m == MODE_GLOBAL_BEST_FIT;
 }
 
 float time_allocator_suite_once(size_t dynBytes) {
     g_dyn_smem_bytes = dynBytes;
 
+    // For global modes, set the heap size managed var
+    if (is_global_mode_host(g_mode)) {
+        g_global_heap_bytes = GLOBAL_HEAP_ALLOC_TEST;
+    }
+
     CUDA_CHECK(cudaDeviceSynchronize());
+
+    // Global modes need 0 shared mem; others need dynBytes
+    size_t smem = is_global_mode_host(g_mode) ? 0 : dynBytes;
 
     cudaEvent_t s,e;
     CUDA_CHECK(cudaEventCreate(&s));
@@ -692,26 +738,26 @@ float time_allocator_suite_once(size_t dynBytes) {
 
     CUDA_CHECK(cudaEventRecord(s));
 
-    test_init<<<1, NUM_THREADS, dynBytes>>>();
-    test_single_alloc_free<<<1, NUM_THREADS, dynBytes>>>();
-    test_multiple_allocs<<<1, NUM_THREADS, dynBytes>>>();
-    test_coalescing<<<1, NUM_THREADS, dynBytes>>>();
-    test_coalescing_orders<<<1, NUM_THREADS, dynBytes>>>();
-    test_splitting<<<1, NUM_THREADS, dynBytes>>>();
-    test_size_boundaries<<<1, NUM_THREADS, dynBytes>>>();
-    //test_exhaustion<<<1, NUM_THREADS, dynBytes>>>();
-    test_fragmentation<<<1, NUM_THREADS, dynBytes>>>();
-    test_free_list_order<<<1, NUM_THREADS, dynBytes>>>();
-    test_null_free<<<1, NUM_THREADS, dynBytes>>>();
-    test_double_free<<<1, NUM_THREADS, dynBytes>>>();
-    test_max_allocation<<<1, NUM_THREADS, dynBytes>>>();
-    test_alignment<<<1, NUM_THREADS, dynBytes>>>();
-    test_interleaved<<<1, NUM_THREADS, dynBytes>>>();
-    test_zero_alloc<<<1, NUM_THREADS, dynBytes>>>();
-    test_thread_isolation<<<1, NUM_THREADS, dynBytes>>>();
-    test_repeated_cycles<<<1, NUM_THREADS, dynBytes>>>();
-    test_mixed_sizes<<<1, NUM_THREADS, dynBytes>>>();
-    //test_best_fit<<<1, NUM_THREADS, dynBytes>>>();
+    test_init<<<1, NUM_THREADS, smem>>>();
+    test_single_alloc_free<<<1, NUM_THREADS, smem>>>();
+    test_multiple_allocs<<<1, NUM_THREADS, smem>>>();
+    test_coalescing<<<1, NUM_THREADS, smem>>>();
+    test_coalescing_orders<<<1, NUM_THREADS, smem>>>();
+    test_splitting<<<1, NUM_THREADS, smem>>>();
+    test_size_boundaries<<<1, NUM_THREADS, smem>>>();
+    //test_exhaustion<<<1, NUM_THREADS, smem>>>();
+    test_fragmentation<<<1, NUM_THREADS, smem>>>();
+    test_free_list_order<<<1, NUM_THREADS, smem>>>();
+    test_null_free<<<1, NUM_THREADS, smem>>>();
+    test_double_free<<<1, NUM_THREADS, smem>>>();
+    test_max_allocation<<<1, NUM_THREADS, smem>>>();
+    test_alignment<<<1, NUM_THREADS, smem>>>();
+    test_interleaved<<<1, NUM_THREADS, smem>>>();
+    test_zero_alloc<<<1, NUM_THREADS, smem>>>();
+    test_thread_isolation<<<1, NUM_THREADS, smem>>>();
+    test_repeated_cycles<<<1, NUM_THREADS, smem>>>();
+    test_mixed_sizes<<<1, NUM_THREADS, smem>>>();
+    //test_best_fit<<<1, NUM_THREADS, smem>>>();
 
     CUDA_CHECK(cudaEventRecord(e));
     CUDA_CHECK(cudaEventSynchronize(e));
@@ -727,14 +773,21 @@ float time_allocator_suite_once(size_t dynBytes) {
 
 float time_fuzzy_once(const TestOperation* d_ops, size_t dynBytes) {
     g_dyn_smem_bytes = dynBytes;
+
+    if (is_global_mode_host(g_mode)) {
+        g_global_heap_bytes = GLOBAL_HEAP_FUZZY;
+    }
+
     CUDA_CHECK(cudaDeviceSynchronize());
+
+    size_t smem = is_global_mode_host(g_mode) ? 0 : dynBytes;
 
     cudaEvent_t s,e;
     CUDA_CHECK(cudaEventCreate(&s));
     CUDA_CHECK(cudaEventCreate(&e));
 
     CUDA_CHECK(cudaEventRecord(s));
-    runTestsFuzzy<<<1, FUZZ_NUM_THREADS, dynBytes>>>(d_ops);
+    runTestsFuzzy<<<1, FUZZ_NUM_THREADS, smem>>>(d_ops);
     CUDA_CHECK(cudaEventRecord(e));
 
     CUDA_CHECK(cudaEventSynchronize(e));
@@ -771,17 +824,26 @@ int main(int argc, char** argv) {
     cudaDeviceProp prop{};
     CUDA_CHECK(cudaGetDeviceProperties(&prop, 0));
     printf("============================================\n");
-    printf("  benchmark_all.cu  (runtime switch, 3 modes)\n");
+    printf("  benchmark_all.cu  (runtime switch, inc. global mem)\n");
     printf("============================================\n");
     printf("Device: %s\n", prop.name);
     printf("sharedMemPerBlock:       %zu bytes\n", (size_t)prop.sharedMemPerBlock);
     printf("sharedMemPerBlockOptin:  %zu bytes\n\n", (size_t)prop.sharedMemPerBlockOptin);
     printf("allocator_test dyn smem: %zu bytes\n", (size_t)SHARED_MEM_ALLOC_TEST);
     printf("fuzzy_test dyn smem:     %zu bytes\n", (size_t)SHARED_MEM_FUZZY);
+    printf("global heap (suite):     %zu bytes\n", (size_t)GLOBAL_HEAP_ALLOC_TEST);
+    printf("global heap (fuzzy):     %zu bytes\n", (size_t)GLOBAL_HEAP_FUZZY);
     printf("BENCH_VERBOSE:           %d (0 recommended)\n\n", (int)BENCH_VERBOSE);
 
-    // For device malloc/free -> give it a heap 256MB
-    CUDA_CHECK(cudaDeviceSetLimit(cudaLimitMallocHeapSize, 1ULL * 1024ULL * 1024ULL * 1024ULL)); // 1GB
+    // For device malloc/free -> give it a heap 1GB
+    CUDA_CHECK(cudaDeviceSetLimit(cudaLimitMallocHeapSize, 1ULL * 1024ULL * 1024ULL * 1024ULL));
+
+    // Pre-allocate global-memory heap (reused across global mode runs)
+    size_t max_global = (GLOBAL_HEAP_ALLOC_TEST > GLOBAL_HEAP_FUZZY)
+                        ? GLOBAL_HEAP_ALLOC_TEST : GLOBAL_HEAP_FUZZY;
+    std::byte* d_global_heap = nullptr;
+    CUDA_CHECK(cudaMalloc(&d_global_heap, max_global));
+    g_global_heap = d_global_heap;
 
     // Prepare fuzzy ops on device (same generation)
     TestOperation h_ops[FUZZ_NUM_THREADS * OPS_PER_THREAD];
@@ -807,26 +869,29 @@ int main(int argc, char** argv) {
         MODE_WARP_FIRST_FIT,     // idx 6  — 32t/pool
         MODE_WARP_BEST_FIT,      // idx 7  — 32t/pool
         MODE_FREELIST,           // idx 8
-        MODE_DEVICE_MALLOC,
+        MODE_GLOBAL_FIRST_FIT,   // idx 9
+        MODE_GLOBAL_BEST_FIT,    // idx 10
+        MODE_DEVICE_MALLOC,      // idx 11
         // ── Round 2 ──────────────────────────
-        MODE_THREAD_FIRST_FIT,   // idx 9
-        MODE_THREAD_BEST_FIT,    // idx 10
-        MODE_WARP_FIRST_FIT,     // idx 11 — 1t/pool
-        MODE_WARP_BEST_FIT,      // idx 12 — 1t/pool
-        MODE_WARP_FIRST_FIT,     // idx 13 — 8t/pool
-        MODE_WARP_BEST_FIT,      // idx 14 — 8t/pool
-        MODE_WARP_FIRST_FIT,     // idx 15 — 32t/pool
-        MODE_WARP_BEST_FIT,      // idx 16 — 32t/pool
-        MODE_FREELIST,           // idx 17
-        MODE_DEVICE_MALLOC
+        MODE_THREAD_FIRST_FIT,   // idx 12
+        MODE_THREAD_BEST_FIT,    // idx 13
+        MODE_WARP_FIRST_FIT,     // idx 14 — 1t/pool
+        MODE_WARP_BEST_FIT,      // idx 15 — 1t/pool
+        MODE_WARP_FIRST_FIT,     // idx 16 — 8t/pool
+        MODE_WARP_BEST_FIT,      // idx 17 — 8t/pool
+        MODE_WARP_FIRST_FIT,     // idx 18 — 32t/pool
+        MODE_WARP_BEST_FIT,      // idx 19 — 32t/pool
+        MODE_FREELIST,           // idx 20
+        MODE_GLOBAL_FIRST_FIT,   // idx 21
+        MODE_GLOBAL_BEST_FIT,    // idx 22
+        MODE_DEVICE_MALLOC       // idx 23
     }){
         run_idx++;
 
-        // HARDCODED SWITCH TO 8 THREADS PER POOL FOR WARP POOL SHOULD CHANGE
-        if (run_idx == 2  || run_idx == 12) g_threads_per_pool = 1;
-        if (run_idx == 4  || run_idx == 14) g_threads_per_pool = 8;
-        if (run_idx == 6  || run_idx == 16) g_threads_per_pool = 32;
-        // HARDCODED SWITCH TO 8 THREADS PER POOL FOR WARP POOL SHOULD CHANGE
+        // HARDCODED SWITCH TO N THREADS PER POOL FOR WARP POOL
+        if (run_idx == 2  || run_idx == 14) g_threads_per_pool = 1;
+        if (run_idx == 4  || run_idx == 16) g_threads_per_pool = 8;
+        if (run_idx == 6  || run_idx == 18) g_threads_per_pool = 32;
 
         g_mode = mode;
         const char* name_csv = mode_name_csv(mode);
@@ -878,6 +943,7 @@ int main(int argc, char** argv) {
     printf("CSV written to: %s\n", csv_path);
 
     CUDA_CHECK(cudaFree(d_ops));
+    if (d_global_heap) CUDA_CHECK(cudaFree(d_global_heap));
     printf("-------------------------------------------------\n");
     printf("Done.\n");
     return 0;

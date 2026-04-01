@@ -57,6 +57,7 @@ if (CUDA)
     cuda/poolAlloc.cu
     cuda/RBTree.cu
     cuda/warplocal.cu
+    cuda/global.cu
     )
   # file(GLOB cu_src_files "cuda/*.cu")
 

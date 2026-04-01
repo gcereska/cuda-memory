@@ -25,3 +25,13 @@ namespace warp_pool {
 
     __device__ void  pfree(void* p);
 }
+
+namespace glob_pool {
+    __device__ void  pool_init(std::byte* heap_base, std::size_t total_bytes);
+
+    __device__ void* pmalloc(std::size_t size);
+
+    __device__ void* pmalloc_best_fit(std::size_t size);
+
+    __device__ void  pfree(void* p);
+}
