@@ -3,6 +3,8 @@
 #include <cumem/cuda/allocator.cuh>
 #include <cumem/cuda/poolAlloc.cuh>
 // #include <cumem/cuda/poolAllocBST.cuh>
+// glob_pool is not supported through the macro interface.
+// It requires a different init signature (cudaMalloc'd heap pointer).
 
 #if defined(USE_THREAD_LOCAL_BEST_FIT)
 #define ALLOCATOR_NAME "Thread Local (Best Fit)"

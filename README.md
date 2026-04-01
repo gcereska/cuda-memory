@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repository implements multiple CUDA shared-memory allocators for fast, block-local dynamic allocation inside kernels. All allocators operate on **dynamic shared memory** (`extern __shared__`) and do not touch global memory (except native device malloc, included as a benchmark baseline).
+This repository implements multiple CUDA shared-memory allocators for fast, block-local dynamic allocation inside kernels. All allocators operate on **dynamic shared memory** (`extern __shared__`) (except our global allocator for when larger heaps are needed, and native device malloc included as a benchmark baseline).
 
 The project provides:
 
@@ -43,7 +43,6 @@ cmake -B build -DUSE_WARP_LOCAL_BEST_FIT
 cmake -B build -DUSE_THREAD_LOCAL
 cmake -B build -DUSE_WARP_LOCAL
 cmake -B build -DUSE_FREELIST_ALLOCATOR
-cmake -B build -DUSE_BST_ALLOCATOR
 ```
 
 ---
@@ -110,6 +109,8 @@ Define one of these to control which allocator the macros route to:
 | `USE_WARP_LOCAL_BEST_FIT` | Warp-local best-fit | `warp_pool::pmalloc_best_fit` |
 | `USE_FREELIST_ALLOCATOR` | Global sorted freelist | `list_pool::pmalloc` |
 | (none) | Native device `malloc`/`free` | — |
+
+The global allocator requires a different initialization method due to incompatability
 
 In CMake:
 ```cmake
@@ -205,6 +206,45 @@ list_pool::pfree(p);
 ```
 
 ---
+
+
+### Global Pool (`glob_pool`)
+
+**Files:** `src/cuda/global.cu`, `src/include/allocator.cuh`
+
+A global-memory version of the thread-local allocator. Identical allocation logic but the heap lives in `cudaMalloc`'d device memory instead of shared memory. Pool metadata and user data can cached through the L1/L2 hierarchy, unlike when using native malloc.
+
+**How it works:**
+- The host allocates a heap via `cudaMalloc` and passes the pointer into the kernel
+- `pool_init` stores the heap base in a `__device__` global variable so subsequent `pmalloc`/`pfree` calls don't need it as an argument
+- The heap is partitioned the same way as `thread_pool`: a `pool_managers` struct at the front, then 32 equal-sized per-thread pools
+- Each thread owns its private pool
+- Same block layout, free list, splitting, and coalescing as `thread_pool`
+- On Volta+ architectures (SM ≥ 7.0), global memory accesses are cached in the unified L1/shared memory SRAM, so performance is close to the shared memory allocators (~25-100% slower in benchmarks)
+
+**API:**
+```cpp
+// Host side:
+std::byte* d_heap;
+size_t heap_bytes = 32 * 1024;
+cudaMalloc(&d_heap, heap_bytes);
+my_kernel<<<1, 32>>>(d_heap, heap_bytes);  // no dynamic shared memory
+cudaFree(d_heap);
+
+// Device side:
+glob_pool::pool_init(d_heap, heap_bytes);  // two arguments
+void* p = glob_pool::pmalloc(size);
+void* p = glob_pool::pmalloc_best_fit(size);
+glob_pool::pfree(p);
+```
+
+**Not available through the macro interface.** The two-argument `pool_init` signature and the requirement of additional code to initalize the pool makes it incompatible with the compile-time macros
+
+**When to use:** When shared memory is too small for your allocation needs, or when you need dynamic allocation from a larger heap.
+
+
+---
+
 
 ### Native Device Malloc (Baseline)
 
